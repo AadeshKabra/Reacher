@@ -28,7 +28,9 @@ from motor.motor_asyncio import AsyncIOMotorClient
 # from langchain_groq import ChatGroq
 from langchain_openai import ChatOpenAI
 import pipeline
-from fastapi import Depends
+from fastapi import UploadFile, File, Form
+from docx import Document
+from io import BytesIO
 
 
 class CustomSystemPrompt(SystemPrompt):
@@ -330,41 +332,31 @@ def google_login():
     oauth_states['state'] = state
 
     return RedirectResponse(authorization_url)
+    
 
+@app.post("/uploadResume")
+async def uploadResume(file: UploadFile = File(...), user_id: str = Form(...)):
+    contents = await file.read()
+    filename = file.filename.lower()
 
-# @app.post("/processQuery")
-# async def process_query(query: ChatRequest):
-#     # print(query)
-#     now = datetime.now(timezone.utc)
+    if filename.endswith(".pdf"):
+        pass
+    elif filename.endswith(".docx"):
+        doc = Document(BytesIO(contents))
+        text = "\n".join([p.text for p in doc.paragraphs])
+        print(text)
+        
+    else:
+        return JSONResponse({"error": "Unsupported file type"}, status_code=400)
+    
+    # print("======================================================")
+    # print(contents)
+    # print("======================================================")
+    await users_collection.update_one(
+        {"email": user_id}, {"$set": {"resume_text": text}}
+    )
 
-#     user_msg = {"role": "user", "content": query.message, "timestamp": now}
-
-#     # task, result, agent, trace_steps = asyncio.run(run_agent(query))
-#     task, result, agent, trace_steps = await run_agent(query.message)
-#     print(result.final_result())
-
-#     assistant_response = result.final_result()
-#     assistant_msg = {"role": "assistant", "content": assistant_response, "timestamp": now}
-
-#     await chats_collection.update_one(
-#         {"session_id": query.session_id},
-#         {
-#             "$push": {"messages": {"$each": [user_msg, assistant_msg]}},
-#             "$set": {"updated_at": now},
-#             "$setOnInsert": {
-#                 "user_id": query.user_id,
-#                 "created_at": now,
-#                 "title": query.message[:50],
-#             },
-#         },
-#         upsert = True,
-#     )
-#     # return {"result": "Processing query"}
-#     # return JSONResponse({"result": result.final_result(), "trace": trace_steps})
-
-#     return {"response": assistant_response, "session_id": query.session_id }
-
-
+    return {"filename": file.filename, "size": len(contents)}
 
 
 @app.post("/processQuery")
@@ -372,7 +364,10 @@ async def process_query(query: ChatRequest):
     now = datetime.now(timezone.utc)
     user_msg = {"role": "user", "content": query.message, "timestamp": now}
 
-    assistant_response = await pipeline.find_leads(query.message, llm)
+    user = await users_collection.find_one({"email": query.user_id})
+    resume_text = user.get("resume_text", "") if user else ""
+
+    assistant_response = await pipeline.find_leads(query.message, llm, resume_text)
 
     assistant_msg = {"role": "assistant", "content": assistant_response, "timestamp": now}
 
@@ -423,16 +418,3 @@ async def get_chat(session_id: str):
         "title": doc.get("title", "Untitled"),
         "messages": [{"role": m["role"], "content": m["content"]} for m in doc.get("messages", [])],
     }
-
-    # doc = await chats_collection.find_one({"session_id": session_id})
-    # if not doc:
-    #     return JSONResponse({"error": "Chat not found"}, status_code=404)
-    
-    # return {
-    #     "session_id": doc.get("session_id"),
-    #     "title": doc.get("title", "Untitled"),
-    #     "messages": [
-    #         {"role": m["role"], "content": m["content"]}
-    #         for m in doc.get("messages", [])
-    #     ]
-    # }

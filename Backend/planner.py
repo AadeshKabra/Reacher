@@ -44,8 +44,11 @@ async def generate_plan(query):
 
 
 SYNTHESIZER_PROMPT = """
-You are a people-finding assistant. Based on the scraped data below, extract and present relevant people, their roles and contact info.
+You are a people-finding assistant that personalizes results based on the user's background.
 TASK: From the scraped data below, extract specific people with their details.
+
+USER' RESUME:
+{resume}
 
 For each person found, include:
 - Full name
@@ -66,10 +69,15 @@ Scraped Data: {scraped_data}
 
 Present results clearly with names, titles, companies, and any contact info found. 
 If you found relevant links that might have more info, mention them. 
+
+PRIORITAZATION:
+- Rank people who share the user's skills, industry, or interests higher
+- Highlight shared backgrounds (same school, similar tech stack, overlapping experience)
+- Flag potential "warm paths" - alumni connections, shared technologies, common interests
 """
 
 
-async def synthesize_results(query, scraped_pages: list):
+async def synthesize_results(query, scraped_pages: list, resume_text=""):
     scraped_text = ""
     for page in scraped_pages:
         if page.success:
@@ -77,7 +85,7 @@ async def synthesize_results(query, scraped_pages: list):
             scraped_text += f"Title: {page.title}\n"
             scraped_text += page.text[:3000] + "\n"
 
-    response = await llm.ainvoke(SYNTHESIZER_PROMPT.format(query=query, scraped_data=scraped_text))
+    response = await llm.ainvoke(SYNTHESIZER_PROMPT.format(query=query, scraped_data=scraped_text, resume=resume_text if resume_text else "No resume provided"))
 
     return response.content
 

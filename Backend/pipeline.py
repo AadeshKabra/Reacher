@@ -5,9 +5,10 @@ from browser_use.agent.service import Agent
 from browser_use.browser.browser import BrowserConfig
 
 
-async def find_leads(query, llm):
+async def find_leads(query, llm, resume_text=""):
     plan = await generate_plan(query)
     urls = [step["url"] for step in plan]
+    
 
     # pages = await scrape_multiple(urls)
     pages = await scrape_with_follow(urls, max_follows=4)
@@ -27,7 +28,7 @@ async def find_leads(query, llm):
             page.success = True
 
     
-    return await synthesize_results(query, pages)
+    return await synthesize_results(query, pages, resume_text)
 
 
 browser = Browser(config=BrowserConfig(headless=True))

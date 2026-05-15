@@ -157,12 +157,34 @@ function startNewChat(){
     querySubmitted.value = false;
 }
 
+async function uploadResumeBackend(){
+
+    console.log("Uploading resume to backend");
+    if(!resumeFile.value){
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', resumeFile.value);
+    formData.append('user_id', userId.value);
+
+    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/uploadResume`, {
+        method: 'POST',
+        body: formData
+    })
+
+    const data = await res.json();
+    console.log(data);
+}
+
 function handleFile(event) {
     const file = event.target.files[0];
     if (file) {
         resumeFile.value = file
         fileName.value = file.name
     }
+
+    uploadResumeBackend();
 }
 
 function handleDrop(event) {
