@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from browser_use import Browser, SystemPrompt
 from browser_use.agent.service import Agent
@@ -28,9 +28,10 @@ from motor.motor_asyncio import AsyncIOMotorClient
 # from langchain_groq import ChatGroq
 from langchain_openai import ChatOpenAI
 import pipeline
-from fastapi import UploadFile, File, Form
 from docx import Document
 from io import BytesIO
+import json
+from sse_starlette.sse import EventSourceResponse
 
 
 class CustomSystemPrompt(SystemPrompt):
@@ -359,22 +360,78 @@ async def uploadResume(file: UploadFile = File(...), user_id: str = Form(...)):
     return {"filename": file.filename, "size": len(contents)}
 
 
+# @app.post("/processQuery")
+# async def process_query(query: ChatRequest):
+#     now = datetime.now(timezone.utc)
+#     user_msg = {"role": "user", "content": query.message, "timestamp": now}
+
+#     user = await users_collection.find_one({"email": query.user_id})
+#     resume_text = user.get("resume_text", "") if user else ""
+
+#     assistant_response = await pipeline.find_leads(query.message, llm, resume_text)
+
+#     assistant_msg = {"role": "assistant", "content": assistant_response, "timestamp": now}
+
+#     await chats_collection.update_one(
+#         {"session_id": query.session_id},
+#         {
+#             "$push": {"messages": {"$each": [user_msg, assistant_msg]}},
+#             "$set": {"updated_at": now},
+#             "$setOnInsert": {
+#                 "user_id": query.user_id,
+#                 "created_at": now,
+#                 "title": query.message[:50],
+#             },
+#         },
+#         upsert=True
+#     )
+
+#     return {"response": assistant_response, "session_id": query.session_id}
+
 @app.post("/processQuery")
 async def process_query(query: ChatRequest):
     now = datetime.now(timezone.utc)
-    user_msg = {"role": "user", "content": query.message, "timestamp": now}
 
     user = await users_collection.find_one({"email": query.user_id})
     resume_text = user.get("resume_text", "") if user else ""
 
-    assistant_response = await pipeline.find_leads(query.message, llm, resume_text)
+    result = await pipeline.find_leads(query.message, llm, resume_text)
 
-    assistant_msg = {"role": "assistant", "content": assistant_response, "timestamp": now}
+    if isinstance(result, str):
+        cleaned = result.strip()
+        if cleaned.startswith("```"):
+            cleaned = cleaned.split("\n", 1)[-1]
+        if cleaned.endswith("```"):
+            cleaned = cleaned.rsplit("```", 1)[0]
+        cleaned = cleaned.strip()
+        try:
+            result = json.loads(cleaned)
+        except (json.JSONDecodeError, TypeError):
+            result = {"summary": result, "leads": []}
+
+    if isinstance(result, dict):
+        summary = result.get("summary", result.get("suggestions", ""))
+        leads = result.get("leads", [])
+    else:
+        summary = result
+        leads = []
+
+    assistant_msg = {
+        "role": "assistant",
+        "content": summary,
+        "leads": leads,
+        "timestamp": now,
+    }
 
     await chats_collection.update_one(
         {"session_id": query.session_id},
         {
-            "$push": {"messages": {"$each": [user_msg, assistant_msg]}},
+            "$push": {
+                "messages": {"$each": [
+                    {"role": "user", "content": query.message, "timestamp": now},
+                    assistant_msg
+                ]}
+            },
             "$set": {"updated_at": now},
             "$setOnInsert": {
                 "user_id": query.user_id,
@@ -382,10 +439,71 @@ async def process_query(query: ChatRequest):
                 "title": query.message[:50],
             },
         },
-        upsert=True
+        upsert=True,
     )
 
-    return {"response": assistant_response, "session_id": query.session_id}
+    return {"response": summary, "leads": leads, "session_id": query.session_id}
+
+
+async def find_contact_for_person(person, browser, llm, timeout=45):
+    task = (
+        f"Find the email address for {person["name"]},"
+        f"{person['title']} at {person['company']}."
+        f"Search on DuckDuckGo, check personal websites, "
+        f"university pages, or company pages. "
+        f"Return ONLY the email address. If not found, say NOT FOUND"
+    )
+
+    agent = Agent(
+        llm = llm,
+        task = task,
+        browser = browser,
+        max_actions_per_step=5,
+        max_input_tokens=16000,
+        max_failures=10,
+    )
+
+    try:
+        result = await asyncio.wait_for(agent.run(), timeout=timeout)
+        return {"name": person["name"], "contact": result.final_result() or "NOT_FOUND"}
+    except asyncio.TimeoutError:
+        return {"name": person["name"], "contact": "TIMED_OUT"}
+
+
+
+@app.get("/enrich/{session_id}")
+async def enrich_contacts(session_id: str):
+    doc = await chats_collection.find_one({"session_id": session_id})
+    if not doc:
+        return JSONResponse({"error": "Chat not found"}, status_code=404)
+    
+    last_assistant_msg = None
+    for msg in reversed(doc.get("messages", [])):
+        if msg["role"] == "assistant" and msg.get("leads"):
+            last_assistant_msg = msg
+            break
+
+    if not last_assistant_msg:
+        return JSONResponse({"error": "No leads to enrich"}, status_code=404)
+    
+    leads = last_assistant_msg["leads"]
+    needs_enrichment = [l for l in leads if not l.get("email")]
+
+    async def event_stream():
+        for person in needs_enrichment:
+            contact = await find_contact_for_person(person, browser, llm, timeout=45)
+            yield {
+                "event": "contact_info found",
+                "data": json.dumps({
+                    "name": person["name"],
+                    "contact": contact["contact"],
+                })
+            }
+
+        yield {"event": "done", "data": "{}"}
+
+    return EventSourceResponse(event_stream())
+
 
 
 @app.get("/chats")

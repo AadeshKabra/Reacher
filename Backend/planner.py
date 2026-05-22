@@ -74,6 +74,21 @@ PRIORITAZATION:
 - Rank people who share the user's skills, industry, or interests higher
 - Highlight shared backgrounds (same school, similar tech stack, overlapping experience)
 - Flag potential "warm paths" - alumni connections, shared technologies, common interests
+
+Respond with ONLY valid JSON, no markdown:
+{{
+  "leads":[
+    {{
+      "name": "Full Name",
+      "title": "Job Title",
+      "company": "Company Name",
+      "email": "email if found, otherwise null",
+      "source_url": "where_you_found_them",
+      "relevance": "Why this person is a good fit based on the user's background and the query"
+    }}
+  ],
+  "suggestions": "A brief summary of what relevant was found"
+}}
 """
 
 

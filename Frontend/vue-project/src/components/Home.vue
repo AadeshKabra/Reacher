@@ -1,4 +1,4 @@
-    <template>
+<template>
 
         <nav id="navbar" :class="{ scrolled: isScrolled }">
             <a href="/" class="logo">Reacher</a>
@@ -48,8 +48,33 @@
             <!-- Chat Section -->
             <section class="chat" v-if="querySubmitted">
                 <div class="chat-messages">
-                    <div v-for="(msg, i) in messages" :key="i" class="message" :class="msg.role">
-                        <p v-html="marked(msg.text)"></p>
+                    <div v-for="(msg, i) in messages" :key="i" class="message" :class="[msg.role, { 'has-leads': msg.leads && msg.leads.length }]">
+
+                        <!-- User message: always plain text -->
+                        <p v-if="msg.role === 'user'" v-html="marked(msg.text)"></p>
+
+                        <!-- Assistant with leads: show cards -->
+                        <template v-else-if="msg.leads && msg.leads.length">
+                            <p v-if="msg.text" class="leads-summary">{{ msg.text }}</p>
+                            <div class="leads-grid">
+                                <div v-for="(lead, j) in msg.leads" :key="j" class="lead-card">
+                                    <div class="lead-avatar">{{ lead.name?.charAt(0) || '?' }}</div>
+                                    <div class="lead-info">
+                                        <div class="lead-name">{{ lead.name }}</div>
+                                        <div class="lead-title">{{ lead.title }} <span v-if="lead.company">@ {{ lead.company }}</span></div>
+                                        <p class="lead-relevance" v-if="lead.relevance">{{ lead.relevance }}</p>
+                                        <div class="lead-actions">
+                                            <a v-if="lead.email" :href="'mailto:' + lead.email" class="lead-btn email-btn">✉ Email</a>
+                                            <a v-if="lead.source_url" :href="lead.source_url" target="_blank" class="lead-btn source-btn">↗ Source</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Assistant without leads: plain text -->
+                        <p v-else v-html="marked(msg.text)"></p>
+
                     </div>
                 </div>
             </section>
@@ -223,7 +248,31 @@ async function getQueryResponse(event){
     const data = await response.json();
     console.log(data);
 
-    messages.value.push({"role": "assistant", "text": data.response});
+    let leads = data.leads || [];
+    let text = data.resposne || data.suggestions || "";
+
+    if(!leads.length && typeof text == "string"){
+        let cleaned = text.trim();
+        if (cleaned.startsWith("```")) cleaned = cleaned.split("\n").slice(1).join("\n");
+        if (cleaned.endsWith("```")) cleaned = cleaned.slice(0, cleaned.lastIndexOf("```"));
+        cleaned = cleaned.trim();
+        try{
+            const parsed = JSON.parse(text);
+            if(Array.isArray(parsed.leads)){
+                leads = parsed.leads;
+                text = parsed.summary || parsed.suggestions || "";
+            }
+        }
+        catch(err){
+
+        }
+    }
+
+    messages.value.push({
+        "role": "assistant",
+        "text": text,
+        "leads": leads
+    });
 
     if(!currentSessionId.value){
         currentSessionId.value = data.session_id
@@ -250,7 +299,8 @@ async function loadChat(sessionId){
         const data = await res.json();
         messages.value = (data.messages || []).map(m => ({
             role: m.role,
-            text: m.content
+            text: m.content,
+            leads: m.leads || []
         }))
     } catch (err){
         console.log("Error loading chats")
@@ -492,6 +542,7 @@ main {
     flex-direction: column;
     gap: 16px;
     margin-top: 32px;
+    padding-bottom: 100px;
 }
 
 .message{
@@ -514,6 +565,124 @@ main {
     align-self: flex-end;
     background: var(--accent);
     color: #fff;
+}
+
+/* When assistant has lead cards, go full-width and transparent */
+.message.assistant.has-leads {
+    max-width: 100%;
+    align-self: stretch;
+    background: transparent;
+    color: var(--text);
+    padding: 0;
+}
+
+.leads-summary {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.leads-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+}
+
+.lead-card {
+    display: flex;
+    gap: 14px;
+    padding: 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.lead-card:hover {
+    border-color: var(--green);
+    box-shadow: var(--shadow-md);
+}
+
+.lead-avatar {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--green-light, #E8F5E9);
+    color: var(--green);
+    font-family: var(--serif);
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.lead-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.lead-name {
+    font-weight: 600;
+    font-size: 0.92rem;
+    color: var(--text);
+    margin-bottom: 2px;
+}
+
+.lead-title {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.lead-title span {
+    color: var(--green);
+    font-weight: 500;
+}
+
+.lead-relevance {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 10px;
+}
+
+.lead-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.lead-btn {
+    padding: 5px 12px;
+    font-size: 0.75rem;
+    font-family: var(--sans);
+    font-weight: 500;
+    border-radius: 100px;
+    text-decoration: none;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.email-btn {
+    background: var(--green);
+    color: #fff;
+}
+
+.email-btn:hover {
+    opacity: 0.85;
+}
+
+.source-btn {
+    background: var(--chip-bg);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+}
+
+.source-btn:hover {
+    border-color: var(--accent);
+    color: var(--text);
 }
 
 .search-fixed {
