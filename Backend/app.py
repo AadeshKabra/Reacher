@@ -395,25 +395,40 @@ async def process_query(query: ChatRequest):
     user = await users_collection.find_one({"email": query.user_id})
     resume_text = user.get("resume_text", "") if user else ""
 
-    result = await pipeline.find_leads(query.message, llm, resume_text)
+    # result = await pipeline.find_leads(query.message, llm, resume_text)
 
-    if isinstance(result, str):
-        cleaned = result.strip()
-        if cleaned.startswith("```"):
-            cleaned = cleaned.split("\n", 1)[-1]
-        if cleaned.endswith("```"):
-            cleaned = cleaned.rsplit("```", 1)[0]
-        cleaned = cleaned.strip()
-        try:
-            result = json.loads(cleaned)
-        except (json.JSONDecodeError, TypeError):
-            result = {"summary": result, "leads": []}
+    classify_prompt = (
+        "Is the following query asking to find, discover, or connect with specific people, "
+        "professionals, employees, or leads, at a company? Answer ONLY 'YES' or 'NO'. \n\n"
+        f"Query: {query.message}"
+    )
+    classification = await llm.ainvoke([{"role": "user", "content": classify_prompt}])
+    is_lead_query = "yes" in classification.content.strip().lower()
 
-    if isinstance(result, dict):
-        summary = result.get("summary", result.get("suggestions", ""))
-        leads = result.get("leads", [])
+    if is_lead_query:
+        result = await pipeline.find_leads(query.message, llm, resume_text)
+
+        if isinstance(result, str):
+            cleaned = result.strip()
+            if cleaned.startswith("```"):
+                cleaned = cleaned.split("\n", 1)[-1]
+            if cleaned.endswith("```"):
+                cleaned = cleaned.rsplit("```", 1)[0]
+            cleaned = cleaned.strip()
+            try:
+                result = json.loads(cleaned)
+            except (json.JSONDecodeError, TypeError):
+                result = {"summary": result, "leads": []}
+
+        if isinstance(result, dict):
+            summary = result.get("summary", result.get("suggestions", ""))
+            leads = result.get("leads", [])
+        else:
+            summary = result
+            leads = []
     else:
-        summary = result
+        direct = await llm.ainvoke([{"role": "user", "content": query.message}])
+        summary = direct.content
         leads = []
 
     assistant_msg = {

@@ -58,7 +58,7 @@
                             <p v-if="msg.text" class="leads-summary">{{ msg.text }}</p>
                             <div class="leads-grid">
                                 <div v-for="(lead, j) in msg.leads" :key="j" class="lead-card">
-                                    <div class="lead-avatar">{{ lead.name?.charAt(0) || '?' }}</div>
+                                    <!-- <div class="lead-avatar">{{ lead.name?.charAt(0) || '?' }}</div> -->
                                     <div class="lead-info">
                                         <div class="lead-name">{{ lead.name }}</div>
                                         <div class="lead-title">{{ lead.title }} <span v-if="lead.company">@ {{ lead.company }}</span></div>
@@ -249,7 +249,7 @@ async function getQueryResponse(event){
     console.log(data);
 
     let leads = data.leads || [];
-    let text = data.resposne || data.suggestions || "";
+    let text = data.response || data.suggestions || "";
 
     if(!leads.length && typeof text == "string"){
         let cleaned = text.trim();
@@ -427,9 +427,10 @@ nav.scrolled {
 main {
     flex: 1;
     overflow-y: auto;
-    max-width: 720px;
+    max-width: 1100px;
     margin: 0 auto;
     padding: 56px 24px 140px;
+    width: 100%;
 }
 
 
@@ -546,12 +547,15 @@ main {
 }
 
 .message{
-    max-width: 75%;
+    max-width: 65ch;
     padding: 14px 18px;
     border-radius: var(--radius);
     font-size: 0.9rem;
-    line-height: 1.6;
-    white-space: pre-wrap;
+    line-height: 1.5;
+}
+
+.message p{
+    margin: 0;
 }
 
 .message.user{
@@ -701,7 +705,7 @@ main {
 
 .search-fixed .search-wrapper {
     width: 100%;
-    max-width: 720px;
+    max-width: 80%;
 }
 
 
