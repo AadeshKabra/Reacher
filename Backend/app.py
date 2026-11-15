@@ -4,7 +4,7 @@ from browser_use import Browser, SystemPrompt
 from browser_use.agent.service import Agent
 from browser_use.agent.views import AgentOutput
 from browser_use.browser.browser import BrowserConfig
-from langchain_ollama import ChatOllama
+from llm_provider import get_agent_llm, claude_code_invoke
 from langchain_core.messages import BaseMessage
 from collections import deque
 from threading import Lock
@@ -26,12 +26,14 @@ from pymongo.errors import OperationFailure
 from pydantic import BaseModel
 from motor.motor_asyncio import AsyncIOMotorClient
 # from langchain_groq import ChatGroq
-from langchain_openai import ChatOpenAI
 import pipeline
 from docx import Document
 from io import BytesIO
 import json
 from sse_starlette.sse import EventSourceResponse
+import re
+from planner import parse_json
+from pypdf import PdfReader
 
 
 class CustomSystemPrompt(SystemPrompt):
@@ -229,6 +231,29 @@ async def run_agent(task):
     return task, result, agent, live_traces
 
 
+def parse_mode(text):
+    words = re.sub(r"[^A-Z]", " ", text.upper()).split()
+    for mode in ("PERSON", "COMPANY", "GENERAL"):
+        if mode in words:
+            return mode
+    
+    return "GENERAL"
+
+
+def normalize_result(result):
+    """Turn a pipeline result into (summary, leads)."""
+    if isinstance(result, str):
+        try:
+            result = parse_json(result)
+        except (json.JSONDecodeError, TypeError):
+            return result, []
+    if isinstance(result, dict):
+        summary = result.get("summary") or result.get("suggestions") or ""
+        return summary, result.get("leads") or []
+    
+    return result, []
+
+
 app = FastAPI()
 
 origins = ["http://localhost:5173"]
@@ -250,13 +275,7 @@ SYSTEM_PROMPT = """You are a people-finding assistant for cold outreach. Follow 
 
 load_dotenv()
 
-# llm = ChatOllama(model="kimi-k2.5:cloud", temperature=0.4)
-llm = ChatOpenAI(
-    base_url="https://api.groq.com/openai/v1",
-    api_key=os.getenv("GROQ_API_KEY"),
-    model = "llama-3.3-70b-versatile",
-    temperature=0.4,
-)
+llm = get_agent_llm()
 live_memory = deque(maxlen=100)
 memory_lock = Lock()
 
@@ -285,6 +304,22 @@ else:
 
 user_current_chat = {}
 
+REACHER_SYSTEM_PROMPT = """You are Reacher, an assistant that helps users find the right people and companies to reach out to for jobs, networking and cold outreach.
+
+What you can do:
+- Find specific people (e.g. "ML engineers at Nvidia", "Who leads backend eng at Stripe?")
+- Discover companies (e.g. "Cybersecurity startups hiring in DC")
+- Use the user's uploaded resume to rank results and highlight shared backgrounds
+- Give advice on cold emails, networking and job searching
+
+Rules:
+- You are Reacher. Never say you are ChatGPT or any other assistant, and never mention the underlying model.
+- Keep answers short (under 150 words) and practical. Avoid large tables.
+- If a question is unrelated to careers, networking or outreach, answer briefly, then explain how Reacher can help.
+- When helpful, end with 1-2 example searches the user could try.
+"""
+
+MAX_RESUME_BYTES = 5 * 1024 * 1024 
 
 
 @app.get("/")
@@ -337,7 +372,15 @@ def google_login():
 
 @app.post("/uploadResume")
 async def uploadResume(file: UploadFile = File(...), user_id: str = Form(...)):
+    if not user_id:
+        return JSONResponse({"error": "Please log in before uploading your resume"}, status_code=401)
+    if users_collection is None:
+        return JSONResponse({"error": "Database is not configured"}, status_code=503)
+
     contents = await file.read()
+    if len(contents) > MAX_RESUME_BYTES:
+        return JSONResponse({"error": "Resume must be under 5MB"}, status_code=400)
+        
     filename = file.filename.lower()
 
     if filename.endswith(".pdf"):
@@ -395,46 +438,40 @@ async def process_query(query: ChatRequest):
     user = await users_collection.find_one({"email": query.user_id})
     resume_text = user.get("resume_text", "") if user else ""
 
-    # result = await pipeline.find_leads(query.message, llm, resume_text)
+    classify_prompt = f"""Classify this query into exactly one category:
+    - PERSON: asking to find specific people, professionals, or employees
+    - COMPANY: asking to discover companies, startups or organnizations
+    - GENERAL: anything else (factual question, greetings, etc)
 
-    classify_prompt = (
-        "Is the following query asking to find, discover, or connect with specific people, "
-        "professionals, employees, or leads, at a company? Answer ONLY 'YES' or 'NO'. \n\n"
-        f"Query: {query.message}"
+    Respond with only one word: PERSON, COMPANY or GENERAL.
+
+    query: {query.message}
+    """
+    classification_text = await claude_code_invoke(
+        system="You are a classifier. Respond with exactly one word.",
+        user=classify_prompt,
     )
-    classification = await llm.ainvoke([{"role": "user", "content": classify_prompt}])
-    is_lead_query = "yes" in classification.content.strip().lower()
+    mode = parse_mode(classification_text)
 
-    if is_lead_query:
+    if mode == "PERSON":
         result = await pipeline.find_leads(query.message, llm, resume_text)
-
-        if isinstance(result, str):
-            cleaned = result.strip()
-            if cleaned.startswith("```"):
-                cleaned = cleaned.split("\n", 1)[-1]
-            if cleaned.endswith("```"):
-                cleaned = cleaned.rsplit("```", 1)[0]
-            cleaned = cleaned.strip()
-            try:
-                result = json.loads(cleaned)
-            except (json.JSONDecodeError, TypeError):
-                result = {"summary": result, "leads": []}
-
-        if isinstance(result, dict):
-            summary = result.get("summary", result.get("suggestions", ""))
-            leads = result.get("leads", [])
-        else:
-            summary = result
-            leads = []
+    elif mode == "COMPANY":
+        result = await pipeline.find_companies(query.message, llm, resume_text)
     else:
-        direct = await llm.ainvoke([{"role": "user", "content": query.message}])
-        summary = direct.content
-        leads = []
+        system = REACHER_SYSTEM_PROMPT
+        if resume_text:
+            system += f"\n\nThe user's resume (use it to personalize answers):\n{resume_text[:3000]}"
+
+        direct_text = await claude_code_invoke(system=system, user=query.message)
+        result = {"summary": direct_text, "leads": []}
+
+    summary, leads = normalize_result(result)
 
     assistant_msg = {
         "role": "assistant",
         "content": summary,
         "leads": leads,
+        "mode": mode,
         "timestamp": now,
     }
 

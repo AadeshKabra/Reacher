@@ -1,13 +1,5 @@
-import json, os
-from langchain_openai import ChatOpenAI
-
-
-llm = ChatOpenAI(
-    base_url="https://api.groq.com/openai/v1",
-    api_key=os.getenv("GROQ_API_KEY"),
-    model="llama-3.3-70b-versatile",
-    temperature=0.2,
-)
+import json
+from llm_provider import claude_code_invoke, PlanResponse, SynthesisResponse
 
 PLANNER_PROMPT = """You are a research planner for FINDING PEOPLE for cold outreach.
 Given a user query, output a JSON plan with search URLs to scrape.
@@ -36,11 +28,24 @@ Respond with ONLY valid JSON, no markdown:
 
 User query: {query}"""
 
+def parse_json(text: str):
+  """Parse LLM JSON output, tolerating JSON fences"""
+  cleaned = text.strip()
+  if cleaned.startswith("```"):
+    cleaned = cleaned.split("\n", 1)[-1]
+  if cleaned.endswith("```"):
+    cleaned = cleaned.rsplit("```", 1)[0]
+  return json.loads(cleaned.strip())
 
-async def generate_plan(query):
-    response = await llm.ainvoke(PLANNER_PROMPT.format(query=query))
-    plan = json.loads(response.content)
-    return plan["steps"]
+
+async def generate_plan(query, prompt=None):
+  prompt = prompt or PLANNER_PROMPT
+  result = await claude_code_invoke(
+      system="You are a research planner. Respond with only valid JSON.",
+      user=prompt.format(query=query),
+      schema=PlanResponse,
+  )
+  return [{"url": s.url, "goal": s.goal} for s in result.steps]
 
 
 SYNTHESIZER_PROMPT = """
@@ -92,15 +97,74 @@ Respond with ONLY valid JSON, no markdown:
 """
 
 
-async def synthesize_results(query, scraped_pages: list, resume_text=""):
-    scraped_text = ""
-    for page in scraped_pages:
-        if page.success:
-            scraped_text += f"\n--- From: {page.url} ---\n"
-            scraped_text += f"Title: {page.title}\n"
-            scraped_text += page.text[:3000] + "\n"
+async def synthesize_results(query, scraped_pages: list, resume_text="", prompt=None):
+  prompt = prompt or SYNTHESIZER_PROMPT
+  scraped_text = ""
+  for page in scraped_pages:
+      if page.success:
+          scraped_text += f"\n--- From: {page.url} ---\n"
+          scraped_text += f"Title: {page.title}\n"
+          scraped_text += page.text[:3000] + "\n"
 
-    response = await llm.ainvoke(SYNTHESIZER_PROMPT.format(query=query, scraped_data=scraped_text, resume=resume_text if resume_text else "No resume provided"))
+  result = await claude_code_invoke(
+      system="You are a people-finding assistant. Respond with only valid JSON.",
+      user=prompt.format(query=query, scraped_data=scraped_text, resume=resume_text if resume_text else "No resume provided"),
+      schema=SynthesisResponse,
+  )
+  return json.dumps(result.model_dump())
 
-    return response.content
 
+
+COMPANY_PLANNER_PROMPT = """You are a research planner for DISCOVERING COMPANIES.
+Given a user query, output a JSON plan with search URLs to scrape.
+
+RULES:
+- Your goal is to FIND COMPANIES, startups or organizations matching the query.
+- Use DuckDuckGo for search (NOT Google — it blocks bots)
+- Search format: https://duckduckgo.com/html/?q=YOUR+QUERY
+- Replace spaces with + in the query.
+- Prefer lists and directories: "top cybersecurity startups DC", "site:builtin.com", "site:ycombinator.com/companies", "site:wellfound.com"
+- Do NOT include LinkedIn URLs (they block scraping)
+- Output 2-4 URLs maximum
+
+Respond with ONLY valid JSON, no markdown:
+{{
+  "steps": [
+    {{"url": "https://...", "goal": "what to extract from this page"}}
+  ]
+}}
+
+User query: {query}"""
+
+
+COMPANY_SYNTHESIZER_PROMPT = """
+You are a company-discovery assistant that personalizes results based on the user's background.
+TASK: From the scraped data below, extract specific companies matching the query.
+
+USER'S RESUME:
+{resume}
+
+IMPORTANT:
+- Only include REAL companies found in the data — do NOT make up companies
+- If nothing relevant was found, return an empty list and suggest better searches in "summary"
+- Rank companies that fit the user's skills and interests higher
+
+User Query: {query}
+
+Scraped Data: {scraped_data}
+
+Respond with ONLY valid JSON, no markdown:
+{{
+  "leads": [
+    {{
+      "name": "Company Name",
+      "title": "One-line description of what they do",
+      "company": "Location or stage if known, otherwise empty string",
+      "email": null,
+      "source_url": "company website or where you found it",
+      "relevance": "Why this company fits the user's background and the query"
+    }}
+  ],
+  "summary": "A brief summary of what was found"
+}}
+"""

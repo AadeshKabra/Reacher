@@ -1,18 +1,19 @@
 <template>
 
-        <nav id="navbar" :class="{ scrolled: isScrolled }">
-            <a href="/" class="logo">Reacher</a>
-            <div class="nav-right">
-                <a href="#" class="nav-link">Home</a>
-                <button class="profile-btn" @click="login">
-                    <span class="profile-dot" :style="userName ? 'background: var(--green)' : ''"></span>
-                    {{ userName || 'Login' }}
-                </button>
-            </div>
-        </nav>
+    <nav id="navbar" :class="{ scrolled: isScrolled }">
+        <a href="/" class="logo">Reacher</a>
+        <div class="nav-right">
+            <a href="#" class="nav-link">Home</a>
+            <button class="profile-btn" @click="login">
+                <span class="profile-dot" :style="userName ? 'background: var(--green)' : ''"></span>
+                {{ userName || 'Login' }}
+            </button>
+        </div>
+    </nav>
 
-        <div class="app-layout">
-        <ChatHistory ref="historyRef" :userId="userId" :activeSessionId="currentSessionId" @select-chat="loadChat" @new-chat="startNewChat" />
+    <div class="app-layout">
+        <ChatHistory ref="historyRef" :userId="userId" :activeSessionId="currentSessionId" @select-chat="loadChat"
+            @new-chat="startNewChat" />
 
         <main>
 
@@ -48,7 +49,8 @@
             <!-- Chat Section -->
             <section class="chat" v-if="querySubmitted">
                 <div class="chat-messages">
-                    <div v-for="(msg, i) in messages" :key="i" class="message" :class="[msg.role, { 'has-leads': msg.leads && msg.leads.length }]">
+                    <div v-for="(msg, i) in messages" :key="i" class="message"
+                        :class="[msg.role, { 'has-leads': msg.leads && msg.leads.length }]">
 
                         <!-- User message: always plain text -->
                         <p v-if="msg.role === 'user'" v-html="marked(msg.text)"></p>
@@ -61,11 +63,14 @@
                                     <!-- <div class="lead-avatar">{{ lead.name?.charAt(0) || '?' }}</div> -->
                                     <div class="lead-info">
                                         <div class="lead-name">{{ lead.name }}</div>
-                                        <div class="lead-title">{{ lead.title }} <span v-if="lead.company">@ {{ lead.company }}</span></div>
+                                        <div class="lead-title">{{ lead.title }} <span v-if="lead.company">@ {{
+                                                lead.company }}</span></div>
                                         <p class="lead-relevance" v-if="lead.relevance">{{ lead.relevance }}</p>
                                         <div class="lead-actions">
-                                            <a v-if="lead.email" :href="'mailto:' + lead.email" class="lead-btn email-btn">✉ Email</a>
-                                            <a v-if="lead.source_url" :href="lead.source_url" target="_blank" class="lead-btn source-btn">↗ Source</a>
+                                            <a v-if="lead.email" :href="'mailto:' + lead.email"
+                                                class="lead-btn email-btn">✉ Email</a>
+                                            <a v-if="lead.source_url" :href="lead.source_url" target="_blank"
+                                                class="lead-btn source-btn">↗ Source</a>
                                         </div>
                                     </div>
                                 </div>
@@ -80,12 +85,12 @@
             </section>
 
             <!-- Search Section -->
-            <section class="section-gap fade-in fade-in-2" :class="['section-gap', 'fade-in', 'fade-in-2', {'search-fixed': querySubmitted}]">
+            <section :class="['section-gap', 'fade-in', 'fade-in-2', { 'search-fixed': querySubmitted }]">
                 <div class="section-label" v-if="!querySubmitted">02 — What are you looking for?</div>
                 <div class="search-wrapper">
                     <input class="search-input" type="text" placeholder="Find somebody to reach out to..."
-                        v-model="searchQuery" id="search-input">
-                    <button class="search-btn" @click="getQueryResponse">
+                        v-model="searchQuery" id="search-input" @keydown.enter="getQueryResponse">
+                    <button class="search-btn" @click="getQueryResponse" :disabled="isLoading">
                         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"
                             stroke-linejoin="round">
                             <line x1="22" y1="2" x2="11" y2="13" />
@@ -116,12 +121,12 @@
         </main>
 
     </div>
-    </template>
+</template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import { marked } from 'marked';
-import {v4 as uuidv4} from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 import ChatHistory from './ChatHistory.vue'
 
 const searchQuery = ref('')
@@ -140,6 +145,7 @@ const userId = ref(params.get('email') || '')
 const currentSessionId = ref(uuidv4());
 
 const historyRef = ref(null);
+const isLoading = ref(false);
 
 
 onMounted(() => {
@@ -150,7 +156,7 @@ onMounted(() => {
     const params = new URLSearchParams(window.location.search)
     const name = params.get('name')
     const email = params.get('email')
-    
+
     if (name && email) {
         userName.value = name;
         userId.value = email;
@@ -158,7 +164,7 @@ onMounted(() => {
         localStorage.setItem('userName', name);
         localStorage.setItem('userId', email);
         window.history.replaceState({}, '', '/')
-    }else{
+    } else {
         userName.value = localStorage.getItem('userName') || '';
         userId.value = localStorage.getItem('userId') || '';
     }
@@ -176,16 +182,16 @@ function uploadResume() {
     fileInput.value.click();
 }
 
-function startNewChat(){
+function startNewChat() {
     currentSessionId.value = uuidv4();
     messages.value = [];
     querySubmitted.value = false;
 }
 
-async function uploadResumeBackend(){
+async function uploadResumeBackend() {
 
     console.log("Uploading resume to backend");
-    if(!resumeFile.value){
+    if (!resumeFile.value) {
         return;
     }
 
@@ -220,80 +226,74 @@ function handleDrop(event) {
     }
 }
 
-async function getQueryResponse(event){
-    // let query = document.getElementById("search-input").value
-    console.log(searchQuery.value);
-    let query = searchQuery.value;
-    // document.getElementById("chips").style.display = "none";
+async function getQueryResponse() {
+    const query = searchQuery.value.trim();
+    if (!query || isLoading.value) return;
+
+    isLoading.value = true;
     querySubmitted.value = true;
-    
-    messages.value.push({"role": "user", "text": query});
+    searchQuery.value = '';
+    messages.value.push({ role: "user", text: query });
 
-     const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/processQuery`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            session_id: currentSessionId.value,
-            user_id: userId.value,
-            message: query
-        })
-        
-    })
+    try {
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/processQuery`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                session_id: currentSessionId.value,
+                user_id: userId.value,
+                message: query
+            })
+        });
 
+        if (!response.ok) throw new Error(`Server returned ${response.status}`);
 
-    // let data = "Found 9 ML Engineers at NVIDIA:\n\n1. **Rasoul Shafipour** - Senior AI/ML Engineer\n   - Previous: AI/ML Research Scientist at Apple\n   - LinkedIn: linkedin.com/in/rshafipour\n\n2. **Jonathan Mitchell** - Senior Machine Learning Engineer\n   - PhD from UCLA in Generative Modeling\n   - Specialization: BioNeMo and NIMs, Computer Vision\n   - LinkedIn: linkedin.com/in/jonathancmitchell\n\n3. **Nigel Nelson** - Senior Machine Learning Engineer\n   - Education: Milwaukee School of Engineering\n   - LinkedIn: linkedin.com/in/nigel-nelson-nvidia\n\n4. **Aqeel Anwar** - Senior ML Engineer\n   - Specialization: Autonomous Vehicles, perception networks\n   - Education: Georgia Tech, Previous: Samsung\n   - LinkedIn: linkedin.com/in/aqeelanwarmalik\n\n5. **Sean Huver** - Sr. Research Manager\n   - Specialization: AI healthcare workflows, NVIDIA Holoscan\n   - Education: UCLA\n   - LinkedIn: linkedin.com/in/sean-huver-53901171\n\n6. **Jeremy Jordan** - Senior ML Engineer, Information Retrieval\n   - Tenure: May 2024 - Present\n   - Previous: Data Scientist at Proofpoint\n   - LinkedIn: linkedin.com/in/jeremytjordan\n\n7. **Jeremy Dyer** - Principal Engineer\n   - Focus: High-performance, open-source systems, AI and large-scale document processing\n   - LinkedIn: linkedin.com/in/jeremy-dyer-a2969447\n\n8. **Matt Linder** - ML Engineer\n   - Education: San Francisco Conservatory of Music\n   - LinkedIn: linkedin.com/in/matt-linder-ml\n\n9. **Lakshmi Ramesh** - ML Engineer\n   - Experience: 2.5+ years in deep learning\n   - Location: Santa Clara, California\n   - LinkedIn: linkedin.com/in/rlakshmi24\n\nNote: NVIDIA also has 1,000+ open Machine Learning Engineer positions in the United States."
+        const data = await response.json();
+        let leads = data.leads || [];
+        let text = data.response || data.suggestions || "";
 
-    const data = await response.json();
-    console.log(data);
-
-    let leads = data.leads || [];
-    let text = data.response || data.suggestions || "";
-
-    if(!leads.length && typeof text == "string"){
-        let cleaned = text.trim();
-        if (cleaned.startsWith("```")) cleaned = cleaned.split("\n").slice(1).join("\n");
-        if (cleaned.endsWith("```")) cleaned = cleaned.slice(0, cleaned.lastIndexOf("```"));
-        cleaned = cleaned.trim();
-        try{
-            const parsed = JSON.parse(text);
-            if(Array.isArray(parsed.leads)){
-                leads = parsed.leads;
-                text = parsed.summary || parsed.suggestions || "";
+        if (!leads.length && typeof text === "string") {
+            let cleaned = text.trim();
+            if (cleaned.startsWith("```")) cleaned = cleaned.split("\n").slice(1).join("\n");
+            if (cleaned.endsWith("```")) cleaned = cleaned.slice(0, cleaned.lastIndexOf("```"));
+            cleaned = cleaned.trim();
+            try {
+                const parsed = JSON.parse(cleaned);
+                if (Array.isArray(parsed.leads)) {
+                    leads = parsed.leads;
+                    text = parsed.summary || parsed.suggestions || "";
+                }
+            } catch (err) {
+                // not JSON — show the text as-is
             }
         }
-        catch(err){
 
-        }
+        messages.value.push({ role: "assistant", text, leads });
+        historyRef.value?.refresh();
+    } catch (err) {
+        console.error(err);
+        messages.value.push({
+            role: "assistant",
+            text: "Something went wrong while searching. Please try again.",
+            leads: []
+        });
+    } finally {
+        isLoading.value = false;
     }
-
-    messages.value.push({
-        "role": "assistant",
-        "text": text,
-        "leads": leads
-    });
-
-    if(!currentSessionId.value){
-        currentSessionId.value = data.session_id
-    }
-    searchQuery.value = '';
-
-    historyRef.value?.refresh()
 }
 
-function clearFile(){
+function clearFile() {
     resumeFile.value = null;
     fileName.value = ''
     fileInput.value.value = "";
 }
 
-async function loadChat(sessionId){
+async function loadChat(sessionId) {
     currentSessionId.value = sessionId;
     querySubmitted.value = true;
     messages.value = []
 
-    try{
+    try {
         const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/chat/${sessionId}`);
 
         const data = await res.json();
@@ -302,7 +302,7 @@ async function loadChat(sessionId){
             text: m.content,
             leads: m.leads || []
         }))
-    } catch (err){
+    } catch (err) {
         console.log("Error loading chats")
     }
 }
@@ -420,7 +420,8 @@ nav.scrolled {
 
 .app-layout {
     display: flex;
-    height: calc(100vh - 65px); /* subtract nav height */
+    height: calc(100vh - 65px);
+    /* subtract nav height */
 }
 
 /* === MAIN === */
@@ -429,8 +430,15 @@ main {
     overflow-y: auto;
     max-width: 1100px;
     margin: 0 auto;
-    padding: 56px 24px 140px;
+    padding: 56px 24px 0;
+    /* removed bottom padding — search bar handles it now */
     width: 100%;
+    display: flex;
+    /* new */
+    flex-direction: column;
+    /* new */
+    min-height: 0;
+    /* new — lets flex item shrink properly inside another flex container */
 }
 
 
@@ -538,7 +546,7 @@ main {
 }
 
 /* Chat section */
-.chat-messages{
+.chat-messages {
     display: flex;
     flex-direction: column;
     gap: 16px;
@@ -546,7 +554,7 @@ main {
     padding-bottom: 100px;
 }
 
-.message{
+.message {
     max-width: 65ch;
     padding: 14px 18px;
     border-radius: var(--radius);
@@ -554,18 +562,18 @@ main {
     line-height: 1.5;
 }
 
-.message p{
+.message p {
     margin: 0;
 }
 
-.message.user{
+.message.user {
     align-self: flex-start;
     background: var(--chip-bg);
     border: 1px solid var(--border);
     color: var(--text);
 }
 
-.message.assistant{
+.message.assistant {
     align-self: flex-end;
     background: var(--accent);
     color: #fff;
@@ -689,7 +697,7 @@ main {
     color: var(--text);
 }
 
-.search-fixed {
+/* .search-fixed {
     position: fixed;
     bottom: 0;
     left: 0;
@@ -701,11 +709,20 @@ main {
     display: flex;
     flex-direction: column;
     align-items: center;
+} */
+
+.search-fixed {
+    margin-top: auto;
+    position: sticky;
+    bottom: 0;
+    padding: 16px 0 24px;
+    background: linear-gradient(transparent, var(--bg) 25%);
+    z-index: 50;
 }
 
 .search-fixed .search-wrapper {
     width: 100%;
-    max-width: 80%;
+    max-width: 100%;
 }
 
 
@@ -715,13 +732,21 @@ main {
 }
 
 .search-wrapper {
-    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
     margin-bottom: 16px;
 }
 
 .search-input {
-    width: 100%;
-    padding: 16px 56px 16px 20px;
+    flex: 1;
+    min-width: 0;
+    /* lets the flex item shrink properly */
+    box-sizing: border-box;
+    /* the actual fix for the overflow */
+    padding: 16px 20px;
+    /* removed the extra right padding that made room for the button */
     font-family: var(--sans);
     font-size: 0.95rem;
     color: var(--text);
@@ -743,12 +768,10 @@ main {
 }
 
 .search-btn {
-    position: absolute;
-    right: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 38px;
-    height: 38px;
+    flex-shrink: 0;
+    /* prevents the button from collapsing */
+    width: 48px;
+    height: 48px;
     background: var(--accent);
     border: none;
     border-radius: var(--radius-sm);
@@ -761,7 +784,8 @@ main {
 
 .search-btn:hover {
     background: #000;
-    transform: translateY(-50%) scale(1.05);
+    transform: scale(1.05);
+    /* was translateY(-50%) scale(1.05) — no longer needed */
 }
 
 .search-btn svg {
