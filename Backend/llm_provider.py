@@ -17,7 +17,7 @@ from langchain_core.messages import (
     ToolMessage,
 )
 from langchain_core.outputs import ChatGeneration, ChatResult
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel
 
 T = TypeVar("T", bound=BaseModel)
 

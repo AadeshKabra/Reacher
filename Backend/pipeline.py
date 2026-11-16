@@ -5,10 +5,9 @@ from browser_use.agent.service import Agent
 from browser_use.browser.browser import BrowserConfig
 
 
-async def find_leads(query, llm, resume_text=""):
-    plan = await generate_plan(query)
+async def find_leads(query, llm, resume_text="", resume_profile=None):
+    plan = await generate_plan(query, profile=resume_profile)
     urls = [step["url"] for step in plan]
-    
 
     # pages = await scrape_multiple(urls)
     pages = await scrape_with_follow(urls, max_follows=4)
@@ -28,8 +27,8 @@ async def _render_js_pages(pages, llm, instruction):
         page.success = True
 
 
-async def find_companies(query, llm, resume_text=""):
-    plan = await generate_plan(query, COMPANY_PLANNER_PROMPT)
+async def find_companies(query, llm, resume_text="", resume_profile=None):
+    plan = await generate_plan(query, COMPANY_PLANNER_PROMPT, profile=resume_profile)
     urls = [step["url"] for step in plan]
 
     pages = await scrape_multiple(urls)

@@ -1,23 +1,28 @@
 import json
 from llm_provider import claude_code_invoke, PlanResponse, SynthesisResponse
+from resume_profile import format_resume_profile
 
 PLANNER_PROMPT = """You are a research planner for FINDING PEOPLE for cold outreach.
-Given a user query, output a JSON plan with search URLs to scrape.
+Given a user query and an optional structured user profile, output a JSON plan with search URLs to scrape.
 
 RULES:
 - Your goal is to FIND PEOPLE with names, job titles and contact information.
 - Use DuckDuckGo for search (NOT Google — it blocks bots)
 - Search format: https://duckduckgo.com/html/?q=YOUR+QUERY
-- Replace spaces with + in thee query.
+- Replace spaces with + in the query.
 - Do NOT link to generic career/about pages - these don't have individual people
 - Do NOT include LinkedIn URLs (they block scraping)
 - Output 2-4 URLs maximum
+- The user query is the primary intent — never ignore it in favor of the profile
+- When a profile is provided, combine query intent with profile skills, companies, schools, locations, and target roles
+- Prefer warm-path angles when they fit the query (alumni + company, shared stack + team pages, industry speakers)
 
-GOOD SEARCH STRATEGIES for fiding people:
+GOOD SEARCH STRATEGIES for finding people:
 - "site:nvidia.com ML engineer team" — finds team pages
 - "nvidia machine learning engineer name email" — finds profiles
 - "nvidia ML engineer speaker conference" — finds people who gave talks
 - "nvidia machine learning blog author" — finds people who write
+- "UMD alumni Stripe engineer" — alumni / warm-path style searches when school fits
 
 Respond with ONLY valid JSON, no markdown:
 {{
@@ -26,7 +31,10 @@ Respond with ONLY valid JSON, no markdown:
   ]
 }}
 
-User query: {query}"""
+User query: {query}
+
+USER PROFILE (structured):
+{profile}"""
 
 def parse_json(text: str):
   """Parse LLM JSON output, tolerating JSON fences"""
@@ -38,11 +46,11 @@ def parse_json(text: str):
   return json.loads(cleaned.strip())
 
 
-async def generate_plan(query, prompt=None):
+async def generate_plan(query, prompt=None, profile=None):
   prompt = prompt or PLANNER_PROMPT
   result = await claude_code_invoke(
       system="You are a research planner. Respond with only valid JSON.",
-      user=prompt.format(query=query),
+      user=prompt.format(query=query, profile=format_resume_profile(profile)),
       schema=PlanResponse,
   )
   return [{"url": s.url, "goal": s.goal} for s in result.steps]
@@ -116,7 +124,7 @@ async def synthesize_results(query, scraped_pages: list, resume_text="", prompt=
 
 
 COMPANY_PLANNER_PROMPT = """You are a research planner for DISCOVERING COMPANIES.
-Given a user query, output a JSON plan with search URLs to scrape.
+Given a user query and an optional structured user profile, output a JSON plan with search URLs to scrape.
 
 RULES:
 - Your goal is to FIND COMPANIES, startups or organizations matching the query.
@@ -126,6 +134,8 @@ RULES:
 - Prefer lists and directories: "top cybersecurity startups DC", "site:builtin.com", "site:ycombinator.com/companies", "site:wellfound.com"
 - Do NOT include LinkedIn URLs (they block scraping)
 - Output 2-4 URLs maximum
+- The user query is the primary intent — never ignore it in favor of the profile
+- When a profile is provided, bias searches toward companies that fit the user's skills, industries, locations, and target roles while still answering the query
 
 Respond with ONLY valid JSON, no markdown:
 {{
@@ -134,7 +144,10 @@ Respond with ONLY valid JSON, no markdown:
   ]
 }}
 
-User query: {query}"""
+User query: {query}
+
+USER PROFILE (structured):
+{profile}"""
 
 
 COMPANY_SYNTHESIZER_PROMPT = """

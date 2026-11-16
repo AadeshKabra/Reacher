@@ -34,6 +34,7 @@ from sse_starlette.sse import EventSourceResponse
 import re
 from planner import parse_json
 from pypdf import PdfReader
+from resume_profile import extract_resume_profile
 
 
 class CustomSystemPrompt(SystemPrompt):
@@ -319,7 +320,34 @@ Rules:
 - When helpful, end with 1-2 example searches the user could try.
 """
 
-MAX_RESUME_BYTES = 5 * 1024 * 1024 
+MAX_RESUME_BYTES = 5 * 1024 * 1024
+
+
+def _normalize_resume_text(text: str) -> str:
+    lines = [line.strip() for line in (text or "").splitlines()]
+    return "\n".join(line for line in lines if line)
+
+
+def extract_resume_text(filename: str, contents: bytes) -> str:
+    name = (filename or "").lower()
+    if name.endswith(".pdf"):
+        reader = PdfReader(BytesIO(contents))
+        parts = []
+        for page in reader.pages:
+            page_text = page.extract_text() or ""
+            if page_text.strip():
+                parts.append(page_text)
+        text = "\n".join(parts)
+    elif name.endswith(".docx"):
+        doc = Document(BytesIO(contents))
+        text = "\n".join(p.text for p in doc.paragraphs if p.text and p.text.strip())
+    else:
+        raise ValueError("Unsupported file type")
+
+    normalized = _normalize_resume_text(text)
+    if not normalized:
+        raise ValueError("Could not extract any text from the resume")
+    return normalized
 
 
 @app.get("/")
@@ -370,6 +398,43 @@ def google_login():
     return RedirectResponse(authorization_url)
     
 
+async def _persist_resume_profile(user_id: str, resume_text: str) -> tuple[dict | None, str | None]:
+    """Extract structured profile and cache it on the user. Returns (profile, error)."""
+    try:
+        profile = await extract_resume_profile(resume_text)
+        data = profile.model_dump()
+        await users_collection.update_one(
+            {"email": user_id},
+            {
+                "$set": {
+                    "resume_profile": data,
+                    "resume_profile_updated_at": datetime.now(timezone.utc),
+                }
+            },
+        )
+        return data, None
+    except Exception as e:
+        await users_collection.update_one(
+            {"email": user_id},
+            {"$unset": {"resume_profile": "", "resume_profile_updated_at": ""}},
+        )
+        return None, str(e)
+
+
+async def ensure_resume_profile(user_id: str, user: dict | None) -> dict | None:
+    """Return cached resume_profile, or extract+cache once if only resume_text exists."""
+    if not user or users_collection is None or not user_id:
+        return None
+    existing = user.get("resume_profile")
+    if isinstance(existing, dict) and existing:
+        return existing
+    resume_text = (user.get("resume_text") or "").strip()
+    if not resume_text:
+        return None
+    data, _err = await _persist_resume_profile(user_id, resume_text)
+    return data
+
+
 @app.post("/uploadResume")
 async def uploadResume(file: UploadFile = File(...), user_id: str = Form(...)):
     if not user_id:
@@ -380,27 +445,26 @@ async def uploadResume(file: UploadFile = File(...), user_id: str = Form(...)):
     contents = await file.read()
     if len(contents) > MAX_RESUME_BYTES:
         return JSONResponse({"error": "Resume must be under 5MB"}, status_code=400)
-        
-    filename = file.filename.lower()
 
-    if filename.endswith(".pdf"):
-        pass
-    elif filename.endswith(".docx"):
-        doc = Document(BytesIO(contents))
-        text = "\n".join([p.text for p in doc.paragraphs])
-        print(text)
-        
-    else:
-        return JSONResponse({"error": "Unsupported file type"}, status_code=400)
-    
-    # print("======================================================")
-    # print(contents)
-    # print("======================================================")
+    try:
+        text = extract_resume_text(file.filename or "", contents)
+    except ValueError as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+
     await users_collection.update_one(
         {"email": user_id}, {"$set": {"resume_text": text}}
     )
 
-    return {"filename": file.filename, "size": len(contents)}
+    profile, profile_error = await _persist_resume_profile(user_id, text)
+    response = {
+        "filename": file.filename,
+        "size": len(contents),
+        "chars": len(text),
+        "profile_extracted": profile is not None,
+    }
+    if profile_error:
+        response["warning"] = f"Resume saved, but profile extraction failed: {profile_error}"
+    return response
 
 
 # @app.post("/processQuery")
@@ -435,8 +499,9 @@ async def uploadResume(file: UploadFile = File(...), user_id: str = Form(...)):
 async def process_query(query: ChatRequest):
     now = datetime.now(timezone.utc)
 
-    user = await users_collection.find_one({"email": query.user_id})
+    user = await users_collection.find_one({"email": query.user_id}) if users_collection is not None else None
     resume_text = user.get("resume_text", "") if user else ""
+    resume_profile = await ensure_resume_profile(query.user_id, user)
 
     classify_prompt = f"""Classify this query into exactly one category:
     - PERSON: asking to find specific people, professionals, or employees
@@ -454,9 +519,13 @@ async def process_query(query: ChatRequest):
     mode = parse_mode(classification_text)
 
     if mode == "PERSON":
-        result = await pipeline.find_leads(query.message, llm, resume_text)
+        result = await pipeline.find_leads(
+            query.message, llm, resume_text, resume_profile=resume_profile
+        )
     elif mode == "COMPANY":
-        result = await pipeline.find_companies(query.message, llm, resume_text)
+        result = await pipeline.find_companies(
+            query.message, llm, resume_text, resume_profile=resume_profile
+        )
     else:
         system = REACHER_SYSTEM_PROMPT
         if resume_text:
