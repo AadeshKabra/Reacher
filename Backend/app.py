@@ -1,4 +1,6 @@
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File, Request, Depends, HTTPException
+import jwt
+import secrets
 from fastapi.middleware.cors import CORSMiddleware
 from browser_use import Browser, SystemPrompt
 from browser_use.agent.service import Agent
@@ -19,8 +21,8 @@ import requests
 import nest_asyncio
 nest_asyncio.apply()
 import asyncio
-from datetime import datetime, timezone
-from urllib.parse import quote, quote_plus
+from datetime import datetime, timezone, timedelta
+from urllib.parse import quote_plus
 from pymongo import MongoClient
 from pymongo.errors import OperationFailure
 from pydantic import BaseModel
@@ -49,7 +51,6 @@ class CustomSystemPrompt(SystemPrompt):
 
 class ChatRequest(BaseModel):
     session_id: str
-    user_id: str
     message: str
 
 
@@ -276,6 +277,14 @@ SYSTEM_PROMPT = """You are a people-finding assistant for cold outreach. Follow 
 
 load_dotenv()
 
+JWT_SECRET = os.getenv("JWT_SECRET")
+if not JWT_SECRET:
+    raise RuntimeError("JWT_SECRET is not set. Add a long random value to Backend/.env.")
+JWT_ALGORITHM = "HS256"
+TOKEN_COOKIE = "reacher_token"
+TOKEN_TTL = timedelta(days=7)
+FRONTEND_URL = "http://localhost:5173"
+
 llm = get_agent_llm()
 live_memory = deque(maxlen=100)
 memory_lock = Lock()
@@ -286,7 +295,9 @@ CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 SCOPES = ['openid', 'https://www.googleapis.com/auth/userinfo.email', 'https://www.googleapis.com/auth/userinfo.profile']
 
-oauth_states = {}
+OAUTH_STATE_COOKIE = "oauth_state"
+OAUTH_STATE_PATH = "/callback"
+OAUTH_STATE_TTL_SECONDS = 600
 
 _mongo_uri = _mongo_connection_uri()
 mongo_client = (
@@ -356,13 +367,11 @@ def root():
 
 
 @app.get("/callback")
-async def callback(code, state):
-    # if request.args.get('state') != session['state']:
-    #     raise Exception('Invalid state')
+async def callback(request: Request, code: str, state: str):
+    expected_state = request.cookies.get(OAUTH_STATE_COOKIE)
+    if not expected_state or not secrets.compare_digest(expected_state.encode(), state.encode()):
+        return _clear_oauth_state(JSONResponse({"error": "Invalid state"}, status_code=400))
 
-    if state != oauth_states.get('state'):
-        return {"error": "Invalid state"}
-    
     flow = Flow.from_client_secrets_file(CLIENT_SECRET_FILE, scopes=SCOPES, state=state)
     flow.redirect_uri = "http://localhost:8000/callback"
     flow.fetch_token(code=code)
@@ -378,14 +387,53 @@ async def callback(code, state):
     email = user_info.get("email", "")
 
     try:
-        is_new = await upsert_user_from_oauth(user_info)
+        await upsert_user_from_oauth(user_info)
     except (RuntimeError, ValueError) as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
+        return _clear_oauth_state(JSONResponse({"error": str(e)}, status_code=500))
 
-    q = (
-        f"name={quote(name)}&email={quote(email)}&is_new={'true' if is_new else 'false'}"
+    response = _clear_oauth_state(RedirectResponse(f"{FRONTEND_URL}/"))
+    response.set_cookie(
+        TOKEN_COOKIE,
+        create_token(email, name),
+        max_age=int(TOKEN_TTL.total_seconds()),
+        httponly=True,
+        samesite="lax",
+        secure=False,  # localhost runs over plain HTTP; turn on with HTTPS
+        path="/",
     )
-    return RedirectResponse(f"http://localhost:5173/?{q}")
+    return response
+
+
+def create_token(email: str, name: str) -> str:
+    now = datetime.now(timezone.utc)
+    claims = {"sub": email, "name": name, "iat": now, "exp": now + TOKEN_TTL}
+    return jwt.encode(claims, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+
+def get_current_user(request: Request) -> dict:
+    token = request.cookies.get(TOKEN_COOKIE)
+    if not token:
+        raise HTTPException(status_code=401, detail="Not signed in")
+    try:
+        claims = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Session expired or invalid")
+    email = claims.get("sub")
+    if not email:
+        raise HTTPException(status_code=401, detail="Session expired or invalid")
+    return {"email": email, "name": claims.get("name", "")}
+
+
+@app.get("/me")
+def me(user: dict = Depends(get_current_user)):
+    return user
+
+
+@app.post("/logout")
+def logout():
+    response = JSONResponse({"ok": True})
+    response.delete_cookie(TOKEN_COOKIE, path="/", samesite="lax", httponly=True)
+    return response
 
 
 @app.get("/auth/google")
@@ -393,9 +441,23 @@ def google_login():
     flow = Flow.from_client_secrets_file(CLIENT_SECRET_FILE, scopes=SCOPES)
     flow.redirect_uri = "http://localhost:8000/callback"
     authorization_url, state = flow.authorization_url(access_type='offline', prompt='select_account')
-    oauth_states['state'] = state
 
-    return RedirectResponse(authorization_url)
+    response = RedirectResponse(authorization_url)
+    response.set_cookie(
+        OAUTH_STATE_COOKIE,
+        state,
+        max_age=OAUTH_STATE_TTL_SECONDS,
+        httponly=True,
+        samesite="lax",
+        secure=False,  # localhost runs over plain HTTP; turn on with HTTPS
+        path=OAUTH_STATE_PATH,
+    )
+    return response
+
+
+def _clear_oauth_state(response):
+    response.delete_cookie(OAUTH_STATE_COOKIE, path=OAUTH_STATE_PATH, samesite="lax", httponly=True)
+    return response
     
 
 async def _persist_resume_profile(user_id: str, resume_text: str) -> tuple[dict | None, str | None]:
@@ -436,9 +498,8 @@ async def ensure_resume_profile(user_id: str, user: dict | None) -> dict | None:
 
 
 @app.post("/uploadResume")
-async def uploadResume(file: UploadFile = File(...), user_id: str = Form(...)):
-    if not user_id:
-        return JSONResponse({"error": "Please log in before uploading your resume"}, status_code=401)
+async def uploadResume(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
+    user_id = user["email"]
     if users_collection is None:
         return JSONResponse({"error": "Database is not configured"}, status_code=503)
 
@@ -496,12 +557,17 @@ async def uploadResume(file: UploadFile = File(...), user_id: str = Form(...)):
 #     return {"response": assistant_response, "session_id": query.session_id}
 
 @app.post("/processQuery")
-async def process_query(query: ChatRequest):
+async def process_query(query: ChatRequest, current_user: dict = Depends(get_current_user)):
     now = datetime.now(timezone.utc)
+    user_id = current_user["email"]
 
-    user = await users_collection.find_one({"email": query.user_id}) if users_collection is not None else None
+    existing_chat = await chats_collection.find_one({"session_id": query.session_id}, {"user_id": 1})
+    if existing_chat and existing_chat.get("user_id") != user_id:
+        return JSONResponse({"error": "Chat not found"}, status_code=404)
+
+    user = await users_collection.find_one({"email": user_id}) if users_collection is not None else None
     resume_text = user.get("resume_text", "") if user else ""
-    resume_profile = await ensure_resume_profile(query.user_id, user)
+    resume_profile = await ensure_resume_profile(user_id, user)
 
     classify_prompt = f"""Classify this query into exactly one category:
     - PERSON: asking to find specific people, professionals, or employees
@@ -545,7 +611,7 @@ async def process_query(query: ChatRequest):
     }
 
     await chats_collection.update_one(
-        {"session_id": query.session_id},
+        {"session_id": query.session_id, "user_id": user_id},
         {
             "$push": {
                 "messages": {"$each": [
@@ -555,7 +621,6 @@ async def process_query(query: ChatRequest):
             },
             "$set": {"updated_at": now},
             "$setOnInsert": {
-                "user_id": query.user_id,
                 "created_at": now,
                 "title": query.message[:50],
             },
@@ -593,8 +658,8 @@ async def find_contact_for_person(person, browser, llm, timeout=45):
 
 
 @app.get("/enrich/{session_id}")
-async def enrich_contacts(session_id: str):
-    doc = await chats_collection.find_one({"session_id": session_id})
+async def enrich_contacts(session_id: str, user: dict = Depends(get_current_user)):
+    doc = await chats_collection.find_one({"session_id": session_id, "user_id": user["email"]})
     if not doc:
         return JSONResponse({"error": "Chat not found"}, status_code=404)
     
@@ -612,7 +677,7 @@ async def enrich_contacts(session_id: str):
 
     async def event_stream():
         for person in needs_enrichment:
-            contact = await find_contact_for_person(person, browser, llm, timeout=45)
+            contact = await find_contact_for_person(person, pipeline.browser, llm, timeout=45)
             yield {
                 "event": "contact_info found",
                 "data": json.dumps({
@@ -628,8 +693,8 @@ async def enrich_contacts(session_id: str):
 
 
 @app.get("/chats")
-async def get_chats(user_id:str):
-    cursor = chats_collection.find({"user_id": user_id}, {"session_id": 1, "title": 1, "updated_at": 1, "messages": {"$slice": -1}}).sort("updated_at", -1).limit(50)
+async def get_chats(user: dict = Depends(get_current_user)):
+    cursor = chats_collection.find({"user_id": user["email"]},{"session_id": 1, "title": 1, "updated_at": 1, "messages": {"$slice": -1}}).sort("updated_at", -1).limit(50)
 
     chats = []
     async for doc in cursor:
@@ -646,8 +711,8 @@ async def get_chats(user_id:str):
 
 
 @app.get("/chat/{session_id}")
-async def get_chat(session_id: str):
-    doc = await chats_collection.find_one({"session_id": session_id})
+async def get_chat(session_id: str, user: dict = Depends(get_current_user)):
+    doc = await chats_collection.find_one({"session_id": session_id, "user_id": user["email"]})
 
     if not doc:
         return JSONResponse({"error": "Chat not found"}, status_code=404)

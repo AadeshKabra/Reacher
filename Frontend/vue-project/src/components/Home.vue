@@ -1,7 +1,17 @@
 <template>
 
     <nav id="navbar" :class="{ scrolled: isScrolled }">
-        <a href="/" class="logo">Reacher</a>
+        <div class="nav-left">
+            <button class="menu-btn" @click="historyRef?.toggle()" aria-label="Toggle conversation history">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round">
+                    <line x1="4" y1="7" x2="20" y2="7" />
+                    <line x1="4" y1="12" x2="20" y2="12" />
+                    <line x1="4" y1="17" x2="20" y2="17" />
+                </svg>
+            </button>
+            <a href="/" class="logo">Reacher</a>
+        </div>
         <div class="nav-right">
             <a href="#" class="nav-link">Home</a>
             <button class="profile-btn" @click="login">
@@ -17,10 +27,21 @@
 
         <main>
 
+            <!-- Hero -->
+            <section class="hero-section fade-in fade-in-1" v-if="!querySubmitted">
+                <h1 class="hero-title">Find people. <em>Reach Out.</em></h1>
+                <p class="hero-sub">Upload your resume to get started. Reacher uses your profile to find the right
+                    people
+                    and craft emails that get replies.</p>
+            </section>
+
             <!-- Upload Section -->
-            <section class="fade-in fade-in-1" v-if="!querySubmitted">
+            <section class="fade-in fade-in-2" v-if="!querySubmitted">
                 <div class="section-label">01 — Your Profile</div>
-                <div class="upload-zone" id="dropzone" @click="uploadResume()" @dragover.prevent @dragenter.prevent
+                <div class="upload-zone" id="dropzone" role="button" tabindex="0" :aria-busy="isUploading"
+                    :aria-label="fileName ? `Resume uploaded: ${fileName}. Press Enter to replace it.` : 'Upload your resume. PDF, DOC, or DOCX, up to 10 megabytes.'"
+                    @click="uploadResume()" @keydown.enter.prevent="uploadResume()"
+                    @keydown.space.prevent="uploadResume()" @dragover.prevent @dragenter.prevent
                     @drop.prevent="handleDrop"
                     :style="resumeFile ? 'cursor: default; border-style: solid; border-color: var(--green); background: var(--green-light)' : ''">
                     <div class="upload-icon">
@@ -32,28 +53,39 @@
                             <polyline points="9 15 12 12 15 15" />
                         </svg>
                     </div>
-                    <p class="upload-text" v-if="!fileName">Drop your resume here or <span>browse</span></p>
-                    <p class="upload-text" v-else style="color: var(--green)">{{ fileName }}</p>
-                    <p class="upload-sub" v-if="!fileName">PDF, DOC, or DOCX</p>
+                    <p class="upload-text" v-if="isUploading">Uploading…</p>
+                    <p class="upload-text" v-else-if="!fileName">Drop your resume here or <span>browse</span></p>
+                    <p class="upload-text upload-text-filename" v-else style="color: var(--green)" :title="fileName">
+                        {{ fileName }}</p>
+                    <p class="upload-sub" v-if="uploadError" role="alert" style="color: #B3261E">{{ uploadError }}
+                    </p>
+                    <p class="upload-sub" v-else-if="isUploading">This may take a moment</p>
+                    <p class="upload-sub" v-else-if="!fileName">PDF, DOC, or DOCX, up to 10MB</p>
                     <p class="upload-sub" v-else>
                         Resume uploaded
                         <span style="color: var(--green); cursor: pointer; text-decoration: underline;"
-                            @click.stop="clearFile">Remove</span>
+                            @click.stop="clearFile" @keydown.enter.stop.prevent="clearFile"
+                            @keydown.space.stop.prevent="clearFile" role="button" tabindex="0">Remove</span>
                     </p>
 
                     <input type="file" ref="fileInput" @change="handleFile" accept=".pdf,.doc,.docx"
-                        style="display: none">
+                        aria-hidden="true" tabindex="-1" style="display: none">
                 </div>
             </section>
 
             <!-- Chat Section -->
-            <section class="chat" v-if="querySubmitted">
+            <section class="chat" v-if="querySubmitted" ref="chatSectionRef">
                 <div class="chat-messages">
                     <div v-for="(msg, i) in messages" :key="i" class="message"
-                        :class="[msg.role, { 'has-leads': msg.leads && msg.leads.length }]">
+                        :class="[msg.role, { 'has-leads': msg.leads && msg.leads.length, loading: msg.loading }]">
 
                         <!-- User message: always plain text -->
-                        <p v-if="msg.role === 'user'" v-html="marked(msg.text)"></p>
+                        <p v-if="msg.role === 'user'" v-html="renderMarkdown(msg.text)"></p>
+
+                        <!-- Loading status while waiting for the backend -->
+                        <p v-else-if="msg.loading" class="loading-status" role="status" aria-live="polite">
+                            {{ msg.text }}<span class="loading-dots" aria-hidden="true"></span>
+                        </p>
 
                         <!-- Assistant with leads: show cards -->
                         <template v-else-if="msg.leads && msg.leads.length">
@@ -62,15 +94,18 @@
                                 <div v-for="(lead, j) in msg.leads" :key="j" class="lead-card">
                                     <!-- <div class="lead-avatar">{{ lead.name?.charAt(0) || '?' }}</div> -->
                                     <div class="lead-info">
-                                        <div class="lead-name">{{ lead.name }}</div>
-                                        <div class="lead-title">{{ lead.title }} <span v-if="lead.company">@ {{
+                                        <div class="lead-name" :title="lead.name || 'Unnamed contact'">{{ lead.name
+                                            || 'Unnamed contact' }}</div>
+                                        <div class="lead-title" v-if="lead.title || lead.company"
+                                            :title="[lead.title, lead.company].filter(Boolean).join(' @ ')">{{
+                                                lead.title }} <span v-if="lead.company">@ {{
                                                 lead.company }}</span></div>
                                         <p class="lead-relevance" v-if="lead.relevance">{{ lead.relevance }}</p>
                                         <div class="lead-actions">
                                             <a v-if="lead.email" :href="'mailto:' + lead.email"
                                                 class="lead-btn email-btn">✉ Email</a>
                                             <a v-if="lead.source_url" :href="lead.source_url" target="_blank"
-                                                class="lead-btn source-btn">↗ Source</a>
+                                                rel="noopener noreferrer" class="lead-btn source-btn">↗ Source</a>
                                         </div>
                                     </div>
                                 </div>
@@ -78,19 +113,20 @@
                         </template>
 
                         <!-- Assistant without leads: plain text -->
-                        <p v-else v-html="marked(msg.text)"></p>
+                        <p v-else v-html="renderMarkdown(msg.text)"></p>
 
                     </div>
                 </div>
             </section>
 
             <!-- Search Section -->
-            <section :class="['section-gap', 'fade-in', 'fade-in-2', { 'search-fixed': querySubmitted }]">
+            <section :class="['search-section', 'fade-in', 'fade-in-3', { 'search-fixed': querySubmitted, 'section-gap': !querySubmitted }]">
                 <div class="section-label" v-if="!querySubmitted">02 — What are you looking for?</div>
                 <div class="search-wrapper">
                     <input class="search-input" type="text" placeholder="Find somebody to reach out to..."
-                        v-model="searchQuery" id="search-input" @keydown.enter="getQueryResponse">
-                    <button class="search-btn" @click="getQueryResponse" :disabled="isLoading">
+                        v-model="searchQuery" id="search-input" @keydown.enter="getQueryResponse"
+                        :disabled="isLoading">
+                    <button class="search-btn" @click="getQueryResponse" :disabled="isLoading" aria-label="Search">
                         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"
                             stroke-linejoin="round">
                             <line x1="22" y1="2" x2="11" y2="13" />
@@ -100,22 +136,24 @@
                 </div>
 
                 <div class="chips" id="chips" v-if="!querySubmitted">
-                    <span class="chip" @click="fillSearch('Find ML engineers at Nvidia')">Find ML engineers at
+                    <span class="chip" role="button" tabindex="0" @click="fillSearch('Find ML engineers at Nvidia')"
+                        @keydown.enter.prevent="fillSearch('Find ML engineers at Nvidia')"
+                        @keydown.space.prevent="fillSearch('Find ML engineers at Nvidia')">Find ML engineers at
                         Nvidia</span>
-                    <span class="chip" @click="fillSearch('Cybersecurity startups hiring in DC')">Cybersecurity startups
+                    <span class="chip" role="button" tabindex="0"
+                        @click="fillSearch('Cybersecurity startups hiring in DC')"
+                        @keydown.enter.prevent="fillSearch('Cybersecurity startups hiring in DC')"
+                        @keydown.space.prevent="fillSearch('Cybersecurity startups hiring in DC')">Cybersecurity
+                        startups
                         hiring in DC</span>
-                    <span class="chip" @click="fillSearch('Who leads backend eng at Stripe?')">Who leads backend eng at
+                    <span class="chip" role="button" tabindex="0"
+                        @click="fillSearch('Who leads backend eng at Stripe?')"
+                        @keydown.enter.prevent="fillSearch('Who leads backend eng at Stripe?')"
+                        @keydown.space.prevent="fillSearch('Who leads backend eng at Stripe?')">Who leads backend eng
+                        at
                         Stripe?</span>
 
                 </div>
-            </section>
-
-            <!-- Hero -->
-            <section class="hero-section fade-in fade-in-4" v-if="!querySubmitted">
-                <h1 class="hero-title">Find people. <em>Reach them.</em></h1>
-                <p class="hero-sub">Upload your resume to get started. Reacher uses your profile to find the right
-                    people
-                    and craft emails that get replies.</p>
             </section>
 
         </main>
@@ -124,10 +162,33 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, nextTick, onBeforeUnmount } from 'vue';
 import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 import { v4 as uuidv4 } from 'uuid';
 import ChatHistory from './ChatHistory.vue'
+
+const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+const REQUEST_TIMEOUT_MS = 30000;
+const MAX_RESUME_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_RESUME_TYPES = ['.pdf', '.doc', '.docx'];
+
+function renderMarkdown(text) {
+    return DOMPurify.sanitize(marked.parse(text ?? '', { breaks: true }));
+}
+
+function hasAllowedExtension(filename) {
+    const lower = (filename || '').toLowerCase();
+    return ALLOWED_RESUME_TYPES.some((ext) => lower.endsWith(ext));
+}
+
+function fetchWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    return fetch(url, { credentials: 'include', ...options, signal: controller.signal }).finally(() => clearTimeout(timer));
+}
+
+const SIGN_IN_PROMPT = 'Sign in with Google to search. Use the Login button at the top right.';
 
 const searchQuery = ref('')
 const isScrolled = ref(false)
@@ -136,16 +197,42 @@ const userName = ref('')
 const fileInput = ref(null);
 const fileName = ref('')
 const resumeFile = ref(null);
+const uploadError = ref('');
+const isUploading = ref(false);
 const querySubmitted = ref(false);
 const messages = ref([]);
 
-const params = new URLSearchParams(window.location.search);
-const userId = ref(params.get('email') || '')
+const userId = ref('')
 
 const currentSessionId = ref(uuidv4());
 
 const historyRef = ref(null);
+const chatSectionRef = ref(null);
 const isLoading = ref(false);
+let loadingStatusTimer = null;
+
+function statusForQuery(query) {
+    const q = query.toLowerCase();
+    if (/\b(startup|startups|compan(?:y|ies)|organizations?|hiring)\b/.test(q)) {
+        return ['Finding companies...', 'Scanning the web...', 'Ranking matches...'];
+    }
+    if (/\b(who|engineer|engineers|people|person|lead|leads|manager|hire|recruit)\b/.test(q)) {
+        return ['Finding leads', 'Searching the web', 'Personalizing matches'];
+    }
+    return ['Generating response...', 'Thinking...', 'Putting it together...'];
+}
+
+function clearLoadingStatusTimer() {
+    if (loadingStatusTimer) {
+        clearInterval(loadingStatusTimer);
+        loadingStatusTimer = null;
+    }
+}
+
+function removeLoadingMessages() {
+    clearLoadingStatusTimer();
+    messages.value = messages.value.filter((msg) => !msg.loading);
+}
 
 
 onMounted(() => {
@@ -153,103 +240,187 @@ onMounted(() => {
         isScrolled.value = window.scrollY > 10
     })
 
-    const params = new URLSearchParams(window.location.search)
-    const name = params.get('name')
-    const email = params.get('email')
-
-    if (name && email) {
-        userName.value = name;
-        userId.value = email;
-
-        localStorage.setItem('userName', name);
-        localStorage.setItem('userId', email);
-        window.history.replaceState({}, '', '/')
-    } else {
-        userName.value = localStorage.getItem('userName') || '';
-        userId.value = localStorage.getItem('userId') || '';
-    }
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userId');
+    loadCurrentUser();
 })
+
+async function loadCurrentUser() {
+    try {
+        const res = await fetchWithTimeout(`${API_BASE}/me`);
+        if (!res.ok) {
+            clearUser();
+            return;
+        }
+        const user = await res.json();
+        userId.value = user.email || '';
+        userName.value = user.name || '';
+    } catch (err) {
+        console.error('Could not check sign-in status:', err);
+        clearUser();
+    }
+}
+
+function clearUser() {
+    userId.value = '';
+    userName.value = '';
+}
 
 function fillSearch(text) {
     searchQuery.value = text
 }
 
 function login() {
-    window.location.href = `${import.meta.env.VITE_BACKEND_URL}/auth/google`;
+    window.location.href = `${API_BASE}/auth/google`;
 }
 
 function uploadResume() {
+    if (isUploading.value) return;
     fileInput.value.click();
 }
 
 function startNewChat() {
+    clearLoadingStatusTimer();
     currentSessionId.value = uuidv4();
     messages.value = [];
     querySubmitted.value = false;
+    isLoading.value = false;
 }
 
-async function uploadResumeBackend() {
+onBeforeUnmount(() => {
+    clearLoadingStatusTimer();
+});
 
-    console.log("Uploading resume to backend");
+async function uploadResumeBackend() {
     if (!resumeFile.value) {
         return;
     }
+    if (!userId.value) {
+        clearFile();
+        uploadError.value = 'Sign in with Google to upload your resume.';
+        return;
+    }
+
+    isUploading.value = true;
+    uploadError.value = '';
 
     const formData = new FormData();
     formData.append('file', resumeFile.value);
-    formData.append('user_id', userId.value);
 
-    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/uploadResume`, {
-        method: 'POST',
-        body: formData
-    })
+    try {
+        const res = await fetchWithTimeout(`${API_BASE}/uploadResume`, {
+            method: 'POST',
+            body: formData
+        });
 
-    const data = await res.json();
-    console.log(data);
+        if (res.status === 401) {
+            clearUser();
+            throw new Error('unauthorized');
+        }
+        if (!res.ok) throw new Error(`Server returned ${res.status}`);
+        await res.json();
+    } catch (err) {
+        console.error('Resume upload failed:', err);
+        uploadError.value = err.name === 'AbortError'
+            ? 'Upload timed out. Please try again.'
+            : err.message === 'unauthorized'
+                ? 'Your sign-in expired. Sign in with Google again to upload your resume.'
+                : 'Upload failed. Please try again.';
+        resumeFile.value = null;
+        fileName.value = '';
+        if (fileInput.value) fileInput.value.value = '';
+    } finally {
+        isUploading.value = false;
+    }
+}
+
+function validateResumeFile(file) {
+    if (!hasAllowedExtension(file.name)) {
+        uploadError.value = 'Unsupported file type. Please upload a PDF, DOC, or DOCX.';
+        return false;
+    }
+    if (file.size > MAX_RESUME_SIZE) {
+        uploadError.value = 'File is too large. Maximum size is 10MB.';
+        return false;
+    }
+    return true;
 }
 
 function handleFile(event) {
     const file = event.target.files[0];
-    if (file) {
-        resumeFile.value = file
-        fileName.value = file.name
+    if (!file || isUploading.value) return;
+
+    uploadError.value = '';
+    if (!validateResumeFile(file)) {
+        event.target.value = '';
+        return;
     }
 
+    resumeFile.value = file;
+    fileName.value = file.name;
     uploadResumeBackend();
 }
 
 function handleDrop(event) {
+    if (isUploading.value) return;
     const file = event.dataTransfer.files[0];
-    if (file) {
-        resumeFile.value = file;
-        fileName.value = file.name;
-    }
+    if (!file) return;
+
+    uploadError.value = '';
+    if (!validateResumeFile(file)) return;
+
+    resumeFile.value = file;
+    fileName.value = file.name;
+    uploadResumeBackend();
 }
 
 async function getQueryResponse() {
     const query = searchQuery.value.trim();
     if (!query || isLoading.value) return;
 
+    if (!userId.value) {
+        querySubmitted.value = true;
+        messages.value.push({ role: "assistant", text: SIGN_IN_PROMPT, leads: [] });
+        return;
+    }
+
     isLoading.value = true;
     querySubmitted.value = true;
     searchQuery.value = '';
     messages.value.push({ role: "user", text: query });
 
+    const statuses = statusForQuery(query);
+    let statusIndex = 0;
+    messages.value.push({ role: "assistant", text: statuses[0], loading: true });
+    loadingStatusTimer = setInterval(() => {
+        statusIndex = (statusIndex + 1) % statuses.length;
+        const loadingMsg = messages.value.find((msg) => msg.loading);
+        if (loadingMsg) loadingMsg.text = statuses[statusIndex];
+    }, 2800);
+
+    await nextTick();
+    chatSectionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
     try {
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/processQuery`, {
+        const response = await fetchWithTimeout(`${API_BASE}/processQuery`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 session_id: currentSessionId.value,
-                user_id: userId.value,
                 message: query
             })
         });
 
+        if (response.status === 401) {
+            clearUser();
+            removeLoadingMessages();
+            messages.value.push({ role: "assistant", text: SIGN_IN_PROMPT, leads: [] });
+            return;
+        }
         if (!response.ok) throw new Error(`Server returned ${response.status}`);
 
         const data = await response.json();
-        let leads = data.leads || [];
+        let leads = Array.isArray(data.leads) ? data.leads : [];
         let text = data.response || data.suggestions || "";
 
         if (!leads.length && typeof text === "string") {
@@ -268,13 +439,17 @@ async function getQueryResponse() {
             }
         }
 
+        removeLoadingMessages();
         messages.value.push({ role: "assistant", text, leads });
         historyRef.value?.refresh();
     } catch (err) {
         console.error(err);
+        removeLoadingMessages();
         messages.value.push({
             role: "assistant",
-            text: "Something went wrong while searching. Please try again.",
+            text: err.name === 'AbortError'
+                ? "The search is taking longer than expected. Please try again."
+                : "Something went wrong while searching. Please try again.",
             leads: []
         });
     } finally {
@@ -284,26 +459,36 @@ async function getQueryResponse() {
 
 function clearFile() {
     resumeFile.value = null;
-    fileName.value = ''
-    fileInput.value.value = "";
+    fileName.value = '';
+    uploadError.value = '';
+    if (fileInput.value) fileInput.value.value = '';
 }
 
 async function loadChat(sessionId) {
+    clearLoadingStatusTimer();
+    isLoading.value = false;
     currentSessionId.value = sessionId;
     querySubmitted.value = true;
     messages.value = []
 
     try {
-        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/chat/${sessionId}`);
+        const res = await fetchWithTimeout(`${API_BASE}/chat/${encodeURIComponent(sessionId)}`);
+        if (res.status === 401) clearUser();
+        if (!res.ok) throw new Error(`Server returned ${res.status}`);
 
         const data = await res.json();
         messages.value = (data.messages || []).map(m => ({
             role: m.role,
             text: m.content,
-            leads: m.leads || []
+            leads: Array.isArray(m.leads) ? m.leads : []
         }))
     } catch (err) {
-        console.log("Error loading chats")
+        console.error('Error loading chat:', err);
+        messages.value = [{
+            role: 'assistant',
+            text: 'Could not load this conversation. Please try again.',
+            leads: []
+        }];
     }
 }
 
@@ -338,7 +523,14 @@ body {
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
+    margin: 0;
     -webkit-font-smoothing: antialiased;
+}
+
+#app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
 }
 </style>
 
@@ -363,12 +555,37 @@ nav.scrolled {
     border-bottom-color: var(--border);
 }
 
+.nav-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
 .logo {
     font-family: var(--serif);
     font-size: 1.5rem;
     letter-spacing: -0.02em;
     color: var(--text);
     text-decoration: none;
+}
+
+.menu-btn {
+    display: none;
+    width: 36px;
+    height: 36px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.menu-btn:hover {
+    border-color: var(--border-hover);
+    color: var(--text);
 }
 
 .nav-right {
@@ -420,8 +637,8 @@ nav.scrolled {
 
 .app-layout {
     display: flex;
-    height: calc(100vh - 65px);
-    /* subtract nav height */
+    flex: 1;
+    min-height: 0;
 }
 
 /* === MAIN === */
@@ -467,7 +684,7 @@ main {
     border: 1.5px dashed var(--upload-border);
     border-radius: var(--radius);
     background: var(--upload-bg);
-    padding: 48px 32px;
+    padding: 20px 32px;
     text-align: center;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -534,6 +751,13 @@ main {
     margin-bottom: 4px;
 }
 
+.upload-text-filename {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .upload-text span {
     color: var(--green);
     text-decoration: underline;
@@ -546,12 +770,19 @@ main {
 }
 
 /* Chat section */
+.chat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
 .chat-messages {
     display: flex;
     flex-direction: column;
     gap: 16px;
-    margin-top: 32px;
-    padding-bottom: 100px;
+    margin-top: 8px;
+    padding-bottom: 24px;
+    flex: 1;
 }
 
 .message {
@@ -564,19 +795,61 @@ main {
 
 .message p {
     margin: 0;
+    overflow-wrap: break-word;
+    word-break: break-word;
 }
 
 .message.user {
-    align-self: flex-start;
+    align-self: flex-end;
     background: var(--chip-bg);
     border: 1px solid var(--border);
     color: var(--text);
 }
 
 .message.assistant {
-    align-self: flex-end;
+    align-self: flex-start;
     background: var(--accent);
     color: #fff;
+}
+
+.message.assistant.loading {
+    align-self: flex-start;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+}
+
+.loading-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-style: italic;
+}
+
+.loading-dots::after {
+    content: '';
+    display: inline-block;
+    width: 1.2em;
+    text-align: left;
+    animation: loadingDots 1.2s steps(4, end) infinite;
+}
+
+@keyframes loadingDots {
+    0% {
+        content: '';
+    }
+
+    25% {
+        content: '.';
+    }
+
+    50% {
+        content: '..';
+    }
+
+    75% {
+        content: '...';
+    }
 }
 
 /* When assistant has lead cards, go full-width and transparent */
@@ -597,7 +870,7 @@ main {
 
 .leads-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
     gap: 12px;
 }
 
@@ -634,6 +907,8 @@ main {
 .lead-info {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 .lead-name {
@@ -641,12 +916,18 @@ main {
     font-size: 0.92rem;
     color: var(--text);
     margin-bottom: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .lead-title {
     font-size: 0.8rem;
     color: var(--text-secondary);
     margin-bottom: 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .lead-title span {
@@ -664,6 +945,7 @@ main {
 .lead-actions {
     display: flex;
     gap: 8px;
+    margin-top: auto;
 }
 
 .lead-btn {
@@ -711,11 +993,15 @@ main {
     align-items: center;
 } */
 
+.search-section {
+    transition: margin-top 0.35s ease, padding 0.35s ease;
+}
+
 .search-fixed {
     margin-top: auto;
     position: sticky;
     bottom: 0;
-    padding: 16px 0 24px;
+    padding: 16px 0 max(24px, calc(env(safe-area-inset-bottom) + 8px));
     background: linear-gradient(transparent, var(--bg) 25%);
     z-index: 50;
 }
@@ -728,7 +1014,18 @@ main {
 
 /* === SEARCH SECTION === */
 .section-gap {
-    margin-top: 56px;
+    margin-top: 40px;
+}
+
+.search-btn:disabled,
+.search-input:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.search-btn:disabled:hover {
+    transform: none;
+    background: var(--accent);
 }
 
 .search-wrapper {
@@ -823,21 +1120,9 @@ main {
 
 /* === HERO FOOTER === */
 .hero-section {
-    margin-top: 100px;
     text-align: center;
-    padding: 64px 0;
+    padding: 0 0 24px;
     position: relative;
-}
-
-.hero-section::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 200px;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--border), transparent);
 }
 
 .hero-title {
@@ -898,13 +1183,50 @@ main {
 }
 
 /* === RESPONSIVE === */
-@media (max-width: 640px) {
+
+/* Coarse pointers (touch) need bigger hit areas than a precise mouse cursor */
+@media (pointer: coarse) {
+
+    .chip,
+    .lead-btn {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .profile-btn,
+    .menu-btn {
+        min-height: 44px;
+    }
+}
+
+/* Tablet: sidebar pushes content with less margin to spare than desktop */
+@media (min-width: 768px) and (max-width: 1023px) {
+    main {
+        padding: 48px 20px 0;
+    }
+}
+
+@media (max-width: 767px) {
     nav {
         padding: 16px 20px;
+        padding-left: max(20px, env(safe-area-inset-left));
+        padding-right: max(20px, env(safe-area-inset-right));
+    }
+
+    .menu-btn {
+        display: flex;
+    }
+
+    .nav-link {
+        display: none;
     }
 
     main {
         padding: 40px 20px 80px;
+        padding-left: max(20px, env(safe-area-inset-left));
+        padding-right: max(20px, env(safe-area-inset-right));
     }
 
     .hero-title {
@@ -913,6 +1235,12 @@ main {
 
     .upload-zone {
         padding: 36px 20px;
+    }
+}
+
+@media (max-width: 640px) {
+    .leads-grid {
+        grid-template-columns: 1fr;
     }
 }
 </style>

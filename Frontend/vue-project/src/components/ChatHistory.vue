@@ -1,7 +1,10 @@
 <template>
+  <div class="history-backdrop" v-show="!isCollapsed" @click="isCollapsed = true"></div>
   <aside class="history-panel" :class="{ collapsed: isCollapsed }">
     <!-- Toggle button -->
-    <button class="toggle-btn" @click="isCollapsed = !isCollapsed" :title="isCollapsed ? 'Expand' : 'Collapse'">
+    <button class="toggle-btn" @click="isCollapsed = !isCollapsed" :title="isCollapsed ? 'Expand' : 'Collapse'"
+      :aria-label="isCollapsed ? 'Expand conversation history' : 'Collapse conversation history'"
+      :aria-expanded="!isCollapsed">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path v-if="isCollapsed" d="M9 18l6-6-6-6" />
         <path v-else d="M15 18l-6-6 6-6" />
@@ -12,7 +15,8 @@
       <!-- Header -->
       <div class="history-header">
         <h2 class="history-title">Conversations</h2>
-        <button class="new-chat-btn" @click="$emit('new-chat')" title="New conversation">
+        <button class="new-chat-btn" @click="startNewChat" title="New conversation"
+          aria-label="Start a new conversation">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
@@ -22,7 +26,7 @@
 
       <!-- Search -->
       <div class="search-wrapper">
-        <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <circle cx="11" cy="11" r="8" />
           <line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
@@ -31,6 +35,7 @@
           type="text"
           class="search-input"
           placeholder="Search chats…"
+          aria-label="Search conversations"
         />
       </div>
 
@@ -43,6 +48,20 @@
             <div class="skeleton-meta"></div>
           </div>
         </template>
+
+        <!-- Not logged in -->
+        <div v-else-if="!userId" class="empty-state">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.5" opacity="0.5">
+            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+          </svg>
+          <p>Log in to see your conversation history</p>
+        </div>
+
+        <!-- Fetch error -->
+        <div v-else-if="loadError" class="empty-state">
+          <p>{{ loadError }}</p>
+          <button class="retry-btn" @click="fetchChats">Try again</button>
+        </div>
 
         <!-- Empty state -->
         <div v-else-if="filteredChats.length === 0" class="empty-state">
@@ -60,7 +79,7 @@
           :key="chat.session_id"
           class="chat-item"
           :class="{ active: chat.session_id === activeSessionId }"
-          @click="$emit('select-chat', chat.session_id)"
+          @click="selectChat(chat.session_id)"
         >
           <div class="chat-item-top">
             <span class="chat-title">{{ chat.title || 'Untitled' }}</span>
@@ -87,14 +106,32 @@ const props = defineProps({
   activeSessionId: { type: String, default: '' },
 })
 
-defineEmits(['select-chat', 'new-chat'])
+const emit = defineEmits(['select-chat', 'new-chat'])
+
+function closeOnMobile() {
+  if (typeof window !== 'undefined' && window.innerWidth < 768) {
+    isCollapsed.value = true
+  }
+}
+
+function selectChat(sessionId) {
+  emit('select-chat', sessionId)
+  closeOnMobile()
+}
+
+function startNewChat() {
+  emit('new-chat')
+  closeOnMobile()
+}
 
 const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
+const REQUEST_TIMEOUT_MS = 15000
 
 const chats = ref([])
 const loading = ref(true)
+const loadError = ref('')
 const searchFilter = ref('')
-const isCollapsed = ref(false)
+const isCollapsed = ref(typeof window !== 'undefined' && window.innerWidth < 768)
 const chatListRef = ref(null)
 
 const filteredChats = computed(() => {
@@ -123,16 +160,33 @@ function formatDate(dateStr) {
 }
 
 async function fetchChats() {
+  if (!props.userId) {
+    chats.value = []
+    loading.value = false
+    return
+  }
+
   loading.value = true
+  loadError.value = ''
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+
   try {
-    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/chats?user_id=${encodeURIComponent(props.userId)}`)
+    const res = await fetch(`${API_BASE}/chats`, {
+      credentials: 'include',
+      signal: controller.signal
+    })
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     const data = await res.json()
-    chats.value = data.chats || []
+    chats.value = Array.isArray(data.chats) ? data.chats : []
   } catch (err) {
     console.error('Failed to load chat history:', err)
     chats.value = []
+    loadError.value = err.name === 'AbortError'
+      ? 'Loading took too long.'
+      : 'Could not load conversations.'
   } finally {
+    clearTimeout(timer)
     loading.value = false
   }
 }
@@ -140,19 +194,25 @@ async function fetchChats() {
 onMounted(fetchChats)
 
 // Re-fetch when userId changes (e.g. after login)
-watch(() => props.userId, (newId) => {
-  if (newId) fetchChats()
-})
+watch(() => props.userId, fetchChats)
 
-// Expose refresh so parent can call it after a new message
-defineExpose({ refresh: fetchChats })
+function toggle() {
+  isCollapsed.value = !isCollapsed.value
+}
+
+// Expose refresh so parent can call it after a new message, and toggle for the mobile nav trigger
+defineExpose({ refresh: fetchChats, toggle })
 </script>
 
 
 <style scoped>
+.history-backdrop {
+  display: none;
+}
+
 .history-panel {
   width: 280px;
-  height: 100vh;
+  height: 100%;
   border-right: 1px solid var(--border);
   background: var(--surface);
   display: flex;
@@ -183,6 +243,64 @@ defineExpose({ refresh: fetchChats })
   z-index: 10;
   box-shadow: var(--shadow-sm);
   transition: background 0.15s, color 0.15s;
+}
+
+/* Coarse pointers (touch) need bigger hit areas than a precise mouse cursor */
+@media (pointer: coarse) {
+  .toggle-btn {
+    width: 44px;
+    height: 44px;
+    right: -22px;
+  }
+
+  .new-chat-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .chat-item {
+    min-height: 44px;
+  }
+}
+
+/* Tablet: narrower push panel, still pushes content rather than overlaying it */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .history-panel {
+    width: 240px;
+  }
+
+  .history-panel.collapsed {
+    width: 48px;
+  }
+}
+
+/* Phone: off-canvas drawer that overlays content instead of sharing width with it */
+@media (max-width: 767px) {
+  .history-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(26, 26, 26, 0.4);
+    z-index: 150;
+  }
+
+  .history-panel,
+  .history-panel.collapsed {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: min(85vw, 320px);
+    height: 100dvh;
+    z-index: 200;
+    border-right: none;
+    box-shadow: var(--shadow-lg);
+    transition: transform 0.25s ease;
+    transform: translateX(-100%);
+  }
+
+  .history-panel:not(.collapsed) {
+    transform: translateX(0);
+  }
 }
 
 .toggle-btn:hover {
@@ -368,6 +486,24 @@ defineExpose({ refresh: fetchChats })
   font-size: 0.82rem;
   color: var(--text-secondary);
   margin: 0;
+}
+
+.retry-btn {
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  font-family: var(--sans);
+  color: var(--text);
+  background: var(--chip-bg);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.retry-btn:hover {
+  background: var(--chip-hover);
+  border-color: var(--border-hover);
 }
 
 /* Skeleton loading */
