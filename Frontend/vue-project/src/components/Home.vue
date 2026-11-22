@@ -12,8 +12,8 @@
             </button>
             <a href="/" class="logo">Reacher</a>
         </div>
+        <h1 class="visually-hidden">Reacher — find people and companies to reach out to</h1>
         <div class="nav-right">
-            <a href="#" class="nav-link">Home</a>
             <button class="profile-btn" @click="login">
                 <span class="profile-dot" :style="userName ? 'background: var(--green)' : ''"></span>
                 {{ userName || 'Login' }}
@@ -23,13 +23,13 @@
 
     <div class="app-layout">
         <ChatHistory ref="historyRef" :userId="userId" :activeSessionId="currentSessionId" @select-chat="loadChat"
-            @new-chat="startNewChat" />
+            @new-chat="startNewChat" @session-expired="clearUser" />
 
         <main>
 
             <!-- Hero -->
             <section class="hero-section fade-in fade-in-1" v-if="!querySubmitted">
-                <h1 class="hero-title">Find people. <em>Reach Out.</em></h1>
+                <p class="hero-title">Find people. <em>Reach Out.</em></p>
                 <p class="hero-sub">Upload your resume to get started. Reacher uses your profile to find the right
                     people
                     and craft emails that get replies.</p>
@@ -38,11 +38,13 @@
             <!-- Upload Section -->
             <section class="fade-in fade-in-2" v-if="!querySubmitted">
                 <div class="section-label">01 — Your Profile</div>
-                <div class="upload-zone" id="dropzone" role="button" tabindex="0" :aria-busy="isUploading"
-                    :aria-label="fileName ? `Resume uploaded: ${fileName}. Press Enter to replace it.` : 'Upload your resume. PDF, DOC, or DOCX, up to 10 megabytes.'"
-                    @click="uploadResume()" @keydown.enter.prevent="uploadResume()"
-                    @keydown.space.prevent="uploadResume()" @dragover.prevent @dragenter.prevent
-                    @drop.prevent="handleDrop"
+                <div class="upload-zone" id="dropzone" :class="{ 'signed-out': !userId }" role="button" tabindex="0"
+                    :aria-busy="isUploading"
+                    :aria-label="!userId ? 'Sign in with Google to upload your resume.' : (fileName ? `Resume uploaded: ${fileName}. Press Enter to replace it.` : 'Upload your resume. PDF, DOC, or DOCX, up to 10 megabytes.')"
+                    @click="userId ? uploadResume() : login()"
+                    @keydown.enter.prevent="userId ? uploadResume() : login()"
+                    @keydown.space.prevent="userId ? uploadResume() : login()" @dragover.prevent @dragenter.prevent
+                    @drop.prevent="userId ? handleDrop($event) : login()"
                     :style="resumeFile ? 'cursor: default; border-style: solid; border-color: var(--green); background: var(--green-light)' : ''">
                     <div class="upload-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"
@@ -53,14 +55,19 @@
                             <polyline points="9 15 12 12 15 15" />
                         </svg>
                     </div>
-                    <p class="upload-text" v-if="isUploading">Uploading…</p>
+                    <p class="upload-text" v-if="!userId">Sign in to upload your resume</p>
+                    <p class="upload-text" v-else-if="isUploading">Uploading…</p>
                     <p class="upload-text" v-else-if="!fileName">Drop your resume here or <span>browse</span></p>
                     <p class="upload-text upload-text-filename" v-else style="color: var(--green)" :title="fileName">
                         {{ fileName }}</p>
-                    <p class="upload-sub" v-if="uploadError" role="alert" style="color: #B3261E">{{ uploadError }}
+                    <p class="upload-sub" v-if="!userId">Used to personalize your results — <span
+                            class="upload-link">sign in with Google</span></p>
+                    <p class="upload-sub" v-else-if="uploadError" role="alert" style="color: #B3261E">{{ uploadError
+                        }}
                     </p>
                     <p class="upload-sub" v-else-if="isUploading">This may take a moment</p>
-                    <p class="upload-sub" v-else-if="!fileName">PDF, DOC, or DOCX, up to 10MB</p>
+                    <p class="upload-sub" v-else-if="!fileName">Optional — PDF, DOC, or DOCX, up to 10MB. You can
+                        search without it.</p>
                     <p class="upload-sub" v-else>
                         Resume uploaded
                         <span style="color: var(--green); cursor: pointer; text-decoration: underline;"
@@ -77,18 +84,26 @@
             <section class="chat" v-if="querySubmitted" ref="chatSectionRef">
                 <div class="chat-messages">
                     <div v-for="(msg, i) in messages" :key="i" class="message"
-                        :class="[msg.role, { 'has-leads': msg.leads && msg.leads.length, loading: msg.loading }]">
+                        :class="[msg.role, { 'has-leads': msg.leads && msg.leads.length, loading: msg.loading, error: msg.error, notice: msg.notice }]">
 
                         <!-- User message: always plain text -->
                         <p v-if="msg.role === 'user'" v-html="renderMarkdown(msg.text)"></p>
 
                         <!-- Loading status while waiting for the backend -->
-                        <p v-else-if="msg.loading" class="loading-status" role="status" aria-live="polite">
-                            {{ msg.text }}<span class="loading-dots" aria-hidden="true"></span>
-                        </p>
+                        <template v-else-if="msg.loading">
+                            <p class="loading-status" role="status" aria-live="polite">
+                                {{ msg.text }}<span class="loading-dots" aria-hidden="true"></span>
+                            </p>
+                            <p class="loading-meta">
+                                {{ formatElapsed(elapsedSeconds) }}
+                                <span v-if="elapsedSeconds < 90"> · usually takes 30–90s</span>
+                                <span v-else> · still working, this one's taking longer than usual</span>
+                            </p>
+                        </template>
 
                         <!-- Assistant with leads: show cards -->
                         <template v-else-if="msg.leads && msg.leads.length">
+                            <p v-if="msg.personalized" class="personalized-badge">Personalized using your résumé</p>
                             <p v-if="msg.text" class="leads-summary">{{ msg.text }}</p>
                             <div class="leads-grid">
                                 <div v-for="(lead, j) in msg.leads" :key="j" class="lead-card">
@@ -104,6 +119,7 @@
                                         <div class="lead-actions">
                                             <a v-if="lead.email" :href="'mailto:' + lead.email"
                                                 class="lead-btn email-btn">✉ Email</a>
+                                            <span v-else class="lead-no-email">No direct email found</span>
                                             <a v-if="lead.source_url" :href="lead.source_url" target="_blank"
                                                 rel="noopener noreferrer" class="lead-btn source-btn">↗ Source</a>
                                         </div>
@@ -199,6 +215,8 @@ const fileName = ref('')
 const resumeFile = ref(null);
 const uploadError = ref('');
 const isUploading = ref(false);
+const hasResume = ref(false);
+let personalizedNoticeShown = false;
 const querySubmitted = ref(false);
 const messages = ref([]);
 
@@ -209,7 +227,9 @@ const currentSessionId = ref(uuidv4());
 const historyRef = ref(null);
 const chatSectionRef = ref(null);
 const isLoading = ref(false);
+const elapsedSeconds = ref(0);
 let loadingStatusTimer = null;
+let elapsedTimer = null;
 
 function statusForQuery(query) {
     const q = query.toLowerCase();
@@ -222,10 +242,20 @@ function statusForQuery(query) {
     return ['Generating response...', 'Thinking...', 'Putting it together...'];
 }
 
+function formatElapsed(totalSeconds) {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${mins}:${String(secs).padStart(2, '0')}`;
+}
+
 function clearLoadingStatusTimer() {
     if (loadingStatusTimer) {
         clearInterval(loadingStatusTimer);
         loadingStatusTimer = null;
+    }
+    if (elapsedTimer) {
+        clearInterval(elapsedTimer);
+        elapsedTimer = null;
     }
 }
 
@@ -285,6 +315,7 @@ function startNewChat() {
     messages.value = [];
     querySubmitted.value = false;
     isLoading.value = false;
+    personalizedNoticeShown = false;
 }
 
 onBeforeUnmount(() => {
@@ -319,6 +350,7 @@ async function uploadResumeBackend() {
         }
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
         await res.json();
+        hasResume.value = true;
     } catch (err) {
         console.error('Resume upload failed:', err);
         uploadError.value = err.name === 'AbortError'
@@ -380,7 +412,7 @@ async function getQueryResponse() {
 
     if (!userId.value) {
         querySubmitted.value = true;
-        messages.value.push({ role: "assistant", text: SIGN_IN_PROMPT, leads: [] });
+        messages.value.push({ role: "assistant", text: SIGN_IN_PROMPT, leads: [], notice: true });
         return;
     }
 
@@ -397,6 +429,10 @@ async function getQueryResponse() {
         const loadingMsg = messages.value.find((msg) => msg.loading);
         if (loadingMsg) loadingMsg.text = statuses[statusIndex];
     }, 2800);
+    elapsedSeconds.value = 0;
+    elapsedTimer = setInterval(() => {
+        elapsedSeconds.value += 1;
+    }, 1000);
 
     await nextTick();
     chatSectionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -414,7 +450,7 @@ async function getQueryResponse() {
         if (response.status === 401) {
             clearUser();
             removeLoadingMessages();
-            messages.value.push({ role: "assistant", text: SIGN_IN_PROMPT, leads: [] });
+            messages.value.push({ role: "assistant", text: SIGN_IN_PROMPT, leads: [], notice: true });
             return;
         }
         if (!response.ok) throw new Error(`Server returned ${response.status}`);
@@ -439,8 +475,11 @@ async function getQueryResponse() {
             }
         }
 
+        const personalized = hasResume.value && leads.length > 0 && !personalizedNoticeShown;
+        if (personalized) personalizedNoticeShown = true;
+
         removeLoadingMessages();
-        messages.value.push({ role: "assistant", text, leads });
+        messages.value.push({ role: "assistant", text, leads, personalized });
         historyRef.value?.refresh();
     } catch (err) {
         console.error(err);
@@ -450,7 +489,8 @@ async function getQueryResponse() {
             text: err.name === 'AbortError'
                 ? "The search is taking longer than expected. Please try again."
                 : "Something went wrong while searching. Please try again.",
-            leads: []
+            leads: [],
+            error: true
         });
     } finally {
         isLoading.value = false;
@@ -461,6 +501,7 @@ function clearFile() {
     resumeFile.value = null;
     fileName.value = '';
     uploadError.value = '';
+    hasResume.value = false;
     if (fileInput.value) fileInput.value.value = '';
 }
 
@@ -487,7 +528,8 @@ async function loadChat(sessionId) {
         messages.value = [{
             role: 'assistant',
             text: 'Could not load this conversation. Please try again.',
-            leads: []
+            leads: [],
+            error: true
         }];
     }
 }
@@ -496,26 +538,26 @@ async function loadChat(sessionId) {
 
 <style>
 :root {
-    --bg: #FAFAF8;
+    --bg: #F4F5F7;
     --surface: #FFFFFF;
-    --text: #1A1A1A;
-    --text-secondary: #6B6B6B;
-    --accent: #2C2C2C;
-    --border: #E4E2DD;
-    --border-hover: #C8C5BD;
-    --chip-bg: #F2F1EE;
-    --chip-hover: #E8E6E1;
-    --upload-bg: #F7F6F3;
-    --upload-border: #D8D5CE;
-    --green: #3A7D44;
-    --green-light: #EDF5EE;
-    --serif: 'DM Serif Display', Georgia, serif;
-    --sans: 'DM Sans', -apple-system, sans-serif;
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.03);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.04);
-    --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
-    --radius: 12px;
-    --radius-sm: 8px;
+    --text: #2E1F3D;
+    --text-secondary: #686C76;
+    --accent: #3D2B54;
+    --border: #E1E3E8;
+    --border-hover: #C9CDD6;
+    --chip-bg: #EBEDF1;
+    --chip-hover: #E0E3E9;
+    --upload-bg: #EFF1F4;
+    --upload-border: #D6DAE1;
+    --green: #3E82A8;
+    --green-light: #DCEDF5;
+    --serif: 'Outfit', -apple-system, sans-serif;
+    --sans: 'Karla', -apple-system, sans-serif;
+    --shadow-sm: 0 1px 2px rgba(30, 35, 45, 0.06), 0 1px 3px rgba(30, 35, 45, 0.04);
+    --shadow-md: 0 4px 12px rgba(30, 35, 45, 0.09), 0 1px 4px rgba(30, 35, 45, 0.05);
+    --shadow-lg: 0 14px 36px rgba(30, 35, 45, 0.12), 0 4px 12px rgba(30, 35, 45, 0.06);
+    --radius: 17px;
+    --radius-sm: 12.5px;
 }
 
 body {
@@ -540,10 +582,10 @@ nav {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px 48px;
+    padding: 14px 48px;
     position: sticky;
     top: 0;
-    background: rgba(250, 250, 248, 0.85);
+    background: color-mix(in srgb, var(--green-light) 80%, transparent);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     z-index: 100;
@@ -594,17 +636,16 @@ nav.scrolled {
     gap: 24px;
 }
 
-.nav-link {
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: var(--text-secondary);
-    text-decoration: none;
-    letter-spacing: 0.01em;
-    transition: color 0.2s;
-}
-
-.nav-link:hover {
-    color: var(--text);
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 .profile-btn {
@@ -744,6 +785,21 @@ main {
     border-color: var(--green);
 }
 
+.upload-zone.signed-out {
+    cursor: pointer;
+}
+
+.upload-zone.signed-out .upload-icon {
+    opacity: 0.55;
+}
+
+.upload-link {
+    color: var(--green);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    font-weight: 500;
+}
+
 .upload-text {
     font-size: 0.92rem;
     font-weight: 500;
@@ -819,11 +875,33 @@ main {
     color: var(--text-secondary);
 }
 
+.message.assistant.notice {
+    align-self: flex-start;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+}
+
+.message.assistant.error {
+    align-self: flex-start;
+    background: #FDEDEC;
+    border: 1px solid #E8B4AE;
+    color: #7A2E27;
+}
+
 .loading-status {
     display: inline-flex;
     align-items: center;
     gap: 2px;
     font-style: italic;
+}
+
+.message .loading-meta {
+    margin-top: 4px;
+    font-size: 0.76rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-secondary);
+    opacity: 0.85;
 }
 
 .loading-dots::after {
@@ -861,10 +939,21 @@ main {
     padding: 0;
 }
 
+.personalized-badge {
+    display: inline-block;
+    margin-bottom: 10px;
+    padding: 4px 12px;
+    border-radius: 100px;
+    background: var(--green-light);
+    color: var(--green);
+    font-size: 0.74rem;
+    font-weight: 500;
+}
+
 .leads-summary {
     font-size: 0.88rem;
     color: var(--text-secondary);
-    margin-bottom: 16px;
+    margin-bottom: 22px;
     line-height: 1.5;
 }
 
@@ -944,8 +1033,16 @@ main {
 
 .lead-actions {
     display: flex;
+    align-items: center;
     gap: 8px;
     margin-top: auto;
+}
+
+.lead-no-email {
+    font-size: 0.72rem;
+    font-style: italic;
+    color: var(--text-secondary);
+    opacity: 0.8;
 }
 
 .lead-btn {
@@ -1061,7 +1158,7 @@ main {
 
 .search-input:focus {
     border-color: var(--accent);
-    box-shadow: var(--shadow-md), 0 0 0 3px rgba(44, 44, 44, 0.06);
+    box-shadow: var(--shadow-md), 0 0 0 3px rgba(44, 44, 44, 0.22);
 }
 
 .search-btn {
@@ -1136,7 +1233,8 @@ main {
 }
 
 .hero-title em {
-    font-style: italic;
+    font-style: normal;
+    font-weight: 600;
     color: var(--green);
 }
 
@@ -1182,6 +1280,44 @@ main {
     animation-delay: 0.40s;
 }
 
+/* === FOCUS === */
+.menu-btn:focus-visible,
+.profile-btn:focus-visible,
+.search-btn:focus-visible,
+.chip:focus-visible,
+.lead-btn:focus-visible,
+.upload-zone:focus-visible {
+    outline: 2px solid var(--green);
+    outline-offset: 2px;
+}
+
+/* === REDUCED MOTION === */
+@media (prefers-reduced-motion: reduce) {
+
+    .fade-in,
+    .fade-in-1,
+    .fade-in-2,
+    .fade-in-3,
+    .fade-in-4 {
+        animation: none;
+    }
+
+    .loading-dots::after {
+        animation: none;
+        content: '...';
+    }
+
+    .upload-zone,
+    .upload-icon,
+    .search-btn,
+    .chip,
+    .lead-card,
+    .lead-btn,
+    .history-panel {
+        transition: none;
+    }
+}
+
 /* === RESPONSIVE === */
 
 /* Coarse pointers (touch) need bigger hit areas than a precise mouse cursor */
@@ -1210,17 +1346,13 @@ main {
 
 @media (max-width: 767px) {
     nav {
-        padding: 16px 20px;
+        padding: 12px 20px;
         padding-left: max(20px, env(safe-area-inset-left));
         padding-right: max(20px, env(safe-area-inset-right));
     }
 
     .menu-btn {
         display: flex;
-    }
-
-    .nav-link {
-        display: none;
     }
 
     main {

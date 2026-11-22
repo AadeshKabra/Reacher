@@ -68,8 +68,13 @@
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.5" opacity="0.5">
             <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
           </svg>
-          <p v-if="searchFilter">No matching conversations</p>
-          <p v-else>No conversations yet</p>
+          <template v-if="searchFilter">
+            <p>No matching conversations</p>
+          </template>
+          <template v-else>
+            <p>No conversations yet</p>
+            <p class="empty-hint">Your searches will show up here</p>
+          </template>
         </div>
 
         <!-- Chat items -->
@@ -106,7 +111,7 @@ const props = defineProps({
   activeSessionId: { type: String, default: '' },
 })
 
-const emit = defineEmits(['select-chat', 'new-chat'])
+const emit = defineEmits(['select-chat', 'new-chat', 'session-expired'])
 
 function closeOnMobile() {
   if (typeof window !== 'undefined' && window.innerWidth < 768) {
@@ -176,6 +181,12 @@ async function fetchChats() {
       credentials: 'include',
       signal: controller.signal
     })
+
+    if (res.status === 401) {
+      chats.value = []
+      emit('session-expired')
+      return
+    }
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     const data = await res.json()
     chats.value = Array.isArray(data.chats) ? data.chats : []
@@ -386,6 +397,7 @@ defineExpose({ refresh: fetchChats, toggle })
 
 .search-input:focus {
   border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(58, 125, 68, 0.18);
 }
 
 /* Chat list */
@@ -488,6 +500,12 @@ defineExpose({ refresh: fetchChats, toggle })
   margin: 0;
 }
 
+.empty-hint {
+  font-size: 0.74rem;
+  opacity: 0.75;
+  margin-top: 2px;
+}
+
 .retry-btn {
   padding: 6px 14px;
   font-size: 0.78rem;
@@ -534,5 +552,29 @@ defineExpose({ refresh: fetchChats, toggle })
 @keyframes shimmer {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
+}
+
+/* === FOCUS === */
+.toggle-btn:focus-visible,
+.new-chat-btn:focus-visible,
+.chat-item:focus-visible,
+.retry-btn:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
+/* === REDUCED MOTION === */
+@media (prefers-reduced-motion: reduce) {
+  .history-panel,
+  .toggle-btn,
+  .new-chat-btn,
+  .chat-item {
+    transition: none;
+  }
+
+  .skeleton-title,
+  .skeleton-meta {
+    animation: none;
+  }
 }
 </style>

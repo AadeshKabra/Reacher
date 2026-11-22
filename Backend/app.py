@@ -720,5 +720,8 @@ async def get_chat(session_id: str, user: dict = Depends(get_current_user)):
     return {
         "session_id": doc.get("session_id"),
         "title": doc.get("title", "Untitled"),
-        "messages": [{"role": m["role"], "content": m["content"]} for m in doc.get("messages", [])],
+        "messages": [
+            {"role": m["role"], "content": m["content"], "leads": m.get("leads", [])}
+            for m in doc.get("messages", [])
+        ],
     }
