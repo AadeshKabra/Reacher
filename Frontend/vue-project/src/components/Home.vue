@@ -14,6 +14,25 @@
         </div>
         <h1 class="visually-hidden">Reacher — find people and companies to reach out to</h1>
         <div class="nav-right">
+            <button class="theme-toggle" @click="toggleTheme"
+                :aria-label="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
+                <svg v-if="theme === 'dark'" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="4" />
+                    <line x1="12" y1="2" x2="12" y2="4" />
+                    <line x1="12" y1="20" x2="12" y2="22" />
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                    <line x1="2" y1="12" x2="4" y2="12" />
+                    <line x1="20" y1="12" x2="22" y2="12" />
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                </svg>
+                <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                </svg>
+            </button>
             <button class="profile-btn" @click="login">
                 <span class="profile-dot" :style="userName ? 'background: var(--green)' : ''"></span>
                 {{ userName || 'Login' }}
@@ -205,6 +224,20 @@ function fetchWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
 }
 
 const SIGN_IN_PROMPT = 'Sign in with Google to search. Use the Login button at the top right.';
+const THEME_STORAGE_KEY = 'reacher-theme';
+
+const theme = ref('light');
+
+function applyTheme(value) {
+    theme.value = value;
+    document.documentElement.setAttribute('data-theme', value);
+}
+
+function toggleTheme() {
+    const next = theme.value === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    localStorage.setItem(THEME_STORAGE_KEY, next);
+}
 
 const searchQuery = ref('')
 const isScrolled = ref(false)
@@ -269,6 +302,10 @@ onMounted(() => {
     window.addEventListener('scroll', () => {
         isScrolled.value = window.scrollY > 10
     })
+
+    const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    applyTheme(storedTheme || (prefersDark ? 'dark' : 'light'));
 
     localStorage.removeItem('userName');
     localStorage.removeItem('userId');
@@ -560,6 +597,29 @@ async function loadChat(sessionId) {
     --radius-sm: 12.5px;
 }
 
+:root[data-theme="dark"] {
+    --bg: #0B0E14;
+    --surface: #121722;
+    --text: #E6E9F0;
+    --text-secondary: #8A93A6;
+    --accent: #1F2937;
+    --border: #232A38;
+    --border-hover: #37414F;
+    --chip-bg: #1A2130;
+    --chip-hover: #232C3D;
+    --upload-bg: #141A26;
+    --upload-border: #2B3447;
+    --green: #22D3C7;
+    --green-light: #123838;
+    --serif: 'Sora', -apple-system, sans-serif;
+    --sans: 'Sora', -apple-system, sans-serif;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4), 0 1px 4px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+    --radius: 4px;
+    --radius-sm: 3px;
+}
+
 body {
     font-family: var(--sans);
     background: var(--bg);
@@ -674,6 +734,26 @@ nav.scrolled {
     height: 8px;
     background: var(--border);
     border-radius: 50%;
+}
+
+.theme-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.theme-toggle:hover {
+    border-color: var(--border-hover);
+    color: var(--text);
+    box-shadow: var(--shadow-sm);
 }
 
 .app-layout {
@@ -889,6 +969,12 @@ main {
     color: #7A2E27;
 }
 
+:root[data-theme="dark"] .message.assistant.error {
+    background: #2A1515;
+    border-color: #6B2E2E;
+    color: #F2A8A0;
+}
+
 .loading-status {
     display: inline-flex;
     align-items: center;
@@ -902,6 +988,10 @@ main {
     font-variant-numeric: tabular-nums;
     color: var(--text-secondary);
     opacity: 0.85;
+}
+
+:root[data-theme="dark"] .loading-meta {
+    font-family: 'JetBrains Mono', monospace;
 }
 
 .loading-dots::after {
@@ -1161,6 +1251,10 @@ main {
     box-shadow: var(--shadow-md), 0 0 0 3px rgba(44, 44, 44, 0.22);
 }
 
+:root[data-theme="dark"] .search-input:focus {
+    box-shadow: var(--shadow-md), 0 0 0 3px rgba(230, 233, 240, 0.18);
+}
+
 .search-btn {
     flex-shrink: 0;
     /* prevents the button from collapsing */
@@ -1213,6 +1307,13 @@ main {
     background: var(--chip-hover);
     border-color: var(--border);
     color: var(--text);
+}
+
+:root[data-theme="dark"] .chip,
+:root[data-theme="dark"] .lead-btn,
+:root[data-theme="dark"] .profile-btn,
+:root[data-theme="dark"] .theme-toggle {
+    border-radius: 4px;
 }
 
 /* === HERO FOOTER === */

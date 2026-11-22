@@ -397,7 +397,7 @@ defineExpose({ refresh: fetchChats, toggle })
 
 .search-input:focus {
   border-color: var(--green);
-  box-shadow: 0 0 0 3px rgba(58, 125, 68, 0.18);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 18%, transparent);
 }
 
 /* Chat list */
@@ -466,6 +466,15 @@ defineExpose({ refresh: fetchChats, toggle })
 .chat-count {
   font-size: 0.72rem;
   color: var(--text-secondary);
+}
+
+:root[data-theme="dark"] .chat-date,
+:root[data-theme="dark"] .chat-count {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+:root[data-theme="dark"] .toggle-btn {
+  border-radius: 4px;
 }
 
 .chat-preview {
