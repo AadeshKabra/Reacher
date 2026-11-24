@@ -312,6 +312,15 @@ defineExpose({ refresh: fetchChats, toggle })
   .history-panel:not(.collapsed) {
     transform: translateX(0);
   }
+
+  /* The nav's menu button opens the drawer on phones, so the edge tab would just poke out of the screen */
+  .history-panel.collapsed .toggle-btn {
+    display: none;
+  }
+
+  .history-panel:not(.collapsed) .toggle-btn {
+    right: 12px;
+  }
 }
 
 .toggle-btn:hover {

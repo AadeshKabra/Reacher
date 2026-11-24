@@ -34,8 +34,7 @@
                 </svg>
             </button>
             <button class="profile-btn" @click="login">
-                <span class="profile-dot" :style="userName ? 'background: var(--green)' : ''"></span>
-                {{ userName || 'Login' }}
+                <span class="profile-name">{{ userName || 'Login' }}</span>
             </button>
         </div>
     </nav>
@@ -45,6 +44,7 @@
             @new-chat="startNewChat" @session-expired="clearUser" />
 
         <main>
+            <div class="main-inner">
 
             <!-- Hero -->
             <section class="hero-section fade-in fade-in-1" v-if="!querySubmitted">
@@ -191,6 +191,7 @@
                 </div>
             </section>
 
+            </div>
         </main>
 
     </div>
@@ -627,6 +628,7 @@ body {
     min-height: 100vh;
     margin: 0;
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
 }
 
 #app {
@@ -669,6 +671,11 @@ nav.scrolled {
     letter-spacing: -0.02em;
     color: var(--text);
     text-decoration: none;
+}
+
+/* Outfit (light theme) reads much lighter than Sora (dark theme) at the same weight */
+:root:not([data-theme="dark"]) .logo {
+    font-weight: 600;
 }
 
 .menu-btn {
@@ -729,11 +736,10 @@ nav.scrolled {
     box-shadow: var(--shadow-sm);
 }
 
-.profile-dot {
-    width: 8px;
-    height: 8px;
-    background: var(--border);
-    border-radius: 50%;
+.profile-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .theme-toggle {
@@ -763,20 +769,50 @@ nav.scrolled {
 }
 
 /* === MAIN === */
+/* main is the full-width scroll container, so its scrollbar sits at the window edge
+   instead of floating beside the centred content column */
 main {
     flex: 1;
     overflow-y: auto;
+    min-width: 0;
+    min-height: 0;
+    /* lets flex item shrink properly inside another flex container */
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-hover) transparent;
+}
+
+main::-webkit-scrollbar {
+    width: 8px;
+}
+
+main::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+main::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 8px;
+}
+
+main::-webkit-scrollbar-thumb:hover {
+    background: var(--border-hover);
+}
+
+main::-webkit-scrollbar-button {
+    display: none;
+}
+
+.main-inner {
     max-width: 1100px;
     margin: 0 auto;
     padding: 56px 24px 0;
     /* removed bottom padding — search bar handles it now */
     width: 100%;
+    /* include padding in the 100% width, otherwise it overflows the viewport by its side padding */
+    box-sizing: border-box;
+    min-height: 100%;
     display: flex;
-    /* new */
     flex-direction: column;
-    /* new */
-    min-height: 0;
-    /* new — lets flex item shrink properly inside another flex container */
 }
 
 
@@ -1440,7 +1476,7 @@ main {
 
 /* Tablet: sidebar pushes content with less margin to spare than desktop */
 @media (min-width: 768px) and (max-width: 1023px) {
-    main {
+    .main-inner {
         padding: 48px 20px 0;
     }
 }
@@ -1456,7 +1492,7 @@ main {
         display: flex;
     }
 
-    main {
+    .main-inner {
         padding: 40px 20px 80px;
         padding-left: max(20px, env(safe-area-inset-left));
         padding-right: max(20px, env(safe-area-inset-right));
@@ -1474,6 +1510,75 @@ main {
 @media (max-width: 640px) {
     .leads-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+/* Small phones (iPhone SE / mini, most Androids ≤ 400px) */
+@media (max-width: 420px) {
+    nav {
+        padding: 10px 16px;
+        padding-left: max(16px, env(safe-area-inset-left));
+        padding-right: max(16px, env(safe-area-inset-right));
+        gap: 8px;
+    }
+
+    .nav-left {
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .logo {
+        font-size: 1.3rem;
+    }
+
+    .nav-right {
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .profile-btn {
+        padding: 8px 12px;
+        max-width: 132px;
+        min-width: 0;
+    }
+
+    .main-inner {
+        padding: 32px 16px 72px;
+        padding-left: max(16px, env(safe-area-inset-left));
+        padding-right: max(16px, env(safe-area-inset-right));
+    }
+
+    .hero-title {
+        font-size: 1.75rem;
+    }
+
+    .hero-sub {
+        font-size: 0.9rem;
+    }
+
+    .upload-zone {
+        padding: 28px 16px;
+    }
+
+    .search-wrapper {
+        gap: 8px;
+    }
+
+    .search-input {
+        padding: 14px 16px;
+        /* 16px keeps iOS Safari from zooming in when the field gets focus */
+        font-size: 16px;
+    }
+
+    .search-btn {
+        width: 48px;
+        height: 48px;
+    }
+
+    .chip {
+        white-space: normal;
+        max-width: 100%;
+        box-sizing: border-box;
     }
 }
 </style>
