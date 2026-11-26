@@ -1,0 +1,1106 @@
+{
+  "meta": {
+    "label": "",
+    "started_at": "2026-11-24T20:36:40.869295+00:00",
+    "finished_at": "2026-11-24T20:46:11.649764+00:00",
+    "git": "07da2b7+dirty",
+    "args": {
+      "quick": false,
+      "ids": null,
+      "group": null,
+      "repeat": 1,
+      "no_judge": false,
+      "profiles": "none",
+      "label": "",
+      "compare": null
+    }
+  },
+  "summary": {
+    "overall": {
+      "queries": 25,
+      "errors": 0,
+      "zero_lead_queries": 25,
+      "leads_total": 0,
+      "leads_per_query": 0.0,
+      "grounded_rate": null,
+      "grounded_exact_rate": null,
+      "unverifiable_leads": 0,
+      "source_fetched_by_pipeline_rate": null,
+      "duplicate_rate": null,
+      "emails_given": 0,
+      "emails_on_page_rate": null,
+      "relevance_mean": null,
+      "relevance_2_rate": null,
+      "latency_mean_s": 22.8,
+      "latency_max_s": 47.1,
+      "pipeline_pages_fetched": 94,
+      "pipeline_pages_blocked_rate": 0.383,
+      "pipeline_pages_failed_rate": 0.0,
+      "gold_recall_mean": null
+    },
+    "by_group": {
+      "alumni": {
+        "queries": 6,
+        "errors": 0,
+        "zero_lead_queries": 6,
+        "leads_total": 0,
+        "leads_per_query": 0.0,
+        "grounded_rate": null,
+        "grounded_exact_rate": null,
+        "unverifiable_leads": 0,
+        "source_fetched_by_pipeline_rate": null,
+        "duplicate_rate": null,
+        "emails_given": 0,
+        "emails_on_page_rate": null,
+        "relevance_mean": null,
+        "relevance_2_rate": null,
+        "latency_mean_s": 16.2,
+        "latency_max_s": 17.3,
+        "pipeline_pages_fetched": 23,
+        "pipeline_pages_blocked_rate": 0.0,
+        "pipeline_pages_failed_rate": 0.0,
+        "gold_recall_mean": null
+      },
+      "companies": {
+        "queries": 7,
+        "errors": 0,
+        "zero_lead_queries": 7,
+        "leads_total": 0,
+        "leads_per_query": 0.0,
+        "grounded_rate": null,
+        "grounded_exact_rate": null,
+        "unverifiable_leads": 0,
+        "source_fetched_by_pipeline_rate": null,
+        "duplicate_rate": null,
+        "emails_given": 0,
+        "emails_on_page_rate": null,
+        "relevance_mean": null,
+        "relevance_2_rate": null,
+        "latency_mean_s": 30.3,
+        "latency_max_s": 36.9,
+        "pipeline_pages_fetched": 26,
+        "pipeline_pages_blocked_rate": 0.885,
+        "pipeline_pages_failed_rate": 0.0,
+        "gold_recall_mean": null
+      },
+      "people": {
+        "queries": 12,
+        "errors": 0,
+        "zero_lead_queries": 12,
+        "leads_total": 0,
+        "leads_per_query": 0.0,
+        "grounded_rate": null,
+        "grounded_exact_rate": null,
+        "unverifiable_leads": 0,
+        "source_fetched_by_pipeline_rate": null,
+        "duplicate_rate": null,
+        "emails_given": 0,
+        "emails_on_page_rate": null,
+        "relevance_mean": null,
+        "relevance_2_rate": null,
+        "latency_mean_s": 21.8,
+        "latency_max_s": 47.1,
+        "pipeline_pages_fetched": 45,
+        "pipeline_pages_blocked_rate": 0.289,
+        "pipeline_pages_failed_rate": 0.0,
+        "gold_recall_mean": null
+      }
+    },
+    "by_variant": {
+      "no_profile": {
+        "queries": 25,
+        "errors": 0,
+        "zero_lead_queries": 25,
+        "leads_total": 0,
+        "leads_per_query": 0.0,
+        "grounded_rate": null,
+        "grounded_exact_rate": null,
+        "unverifiable_leads": 0,
+        "source_fetched_by_pipeline_rate": null,
+        "duplicate_rate": null,
+        "emails_given": 0,
+        "emails_on_page_rate": null,
+        "relevance_mean": null,
+        "relevance_2_rate": null,
+        "latency_mean_s": 22.8,
+        "latency_max_s": 47.1,
+        "pipeline_pages_fetched": 94,
+        "pipeline_pages_blocked_rate": 0.383,
+        "pipeline_pages_failed_rate": 0.0,
+        "gold_recall_mean": null
+      }
+    },
+    "personalization": null
+  },
+  "queries": [
+    {
+      "id": "p01",
+      "group": "people",
+      "mode": "people",
+      "profile": "ml_student_umd",
+      "variant": "no_profile",
+      "query": "Find ML engineers at Nvidia",
+      "gold": [],
+      "error": null,
+      "summary_text": "No specific individuals found. The scraped data contained only DuckDuckGo CAPTCHA pages with no usable search results.",
+      "leads": [],
+      "latency_s": 15.7,
+      "pages": {
+        "fetched": 4,
+        "ok": 4,
+        "blocked": 0,
+        "failed": 0,
+        "needed_js": 0,
+        "urls": [
+          "https://duckduckgo.com/html/?q=nvidia+machine+learning+engineer+team+site%3Anvidia.com",
+          "https://duckduckgo.com/html/?q=nvidia+ML+engineer+speaker+conference+2026",
+          "https://duckduckgo.com/html/?q=nvidia+machine+learning+blog+author+engineer",
+          "https://duckduckgo.com/html/?q=%22nvidia%22+%22machine+learning+engineer%22+name+email"
+        ]
+      },
+      "metrics": {
+        "leads": 0,
+        "duplicates": 0,
+        "checkable_leads": 0,
+        "grounded_exact": 0,
+        "grounded_partial": 0,
+        "source_fetched_by_pipeline": 0,
+        "emails_given": 0,
+        "emails_on_page": 0,
+        "relevance_scores": [],
+        "gold_recall": null
+      },
+      "run": 1
+    },
+    {
+      "id": "p02",
+      "group": "people",
+      "mode": "people",
+      "profile": "ml_student_umd",
+      "variant": "no_profile",
+      "query": "Who leads backend engineering at Stripe?",
+      "gold": [],
+      "error": null,
+      "summary_text": "All three DuckDuckGo searches were blocked by CAPTCHA, so no people data could be extracted. Alternative search approaches are recommended.",
+      "leads": [],
+      "latency_s": 14.9,
+      "pages": {
+        "fetched": 3,
+        "ok": 3,
+        "blocked": 0,
+        "failed": 0,
+        "needed_js": 0,
+        "urls": [
+          "https://duckduckgo.com/html/?q=Stripe+backend+engineering+leader+VP+director+name",
+          "https://duckduckgo.com/html/?q=site%3Astripe.com+backend+engineering+team+lead",
+          "https://duckduckgo.com/html/?q=Stripe+%22head+of+backend%22+OR+%22VP+backend+engineering%22+OR+%22director+backend%22+engineer"
+        ]
+      },
+      "metrics": {
+        "leads": 0,
+        "duplicates": 0,
+        "checkable_leads": 0,
+        "grounded_exact": 0,
+        "grounded_partial": 0,
+        "source_fetched_by_pipeline": 0,
+        "emails_given": 0,
+        "emails_on_page": 0,
+        "relevance_scores": [],
+        "gold_recall": null
+      },
+      "run": 1
+    },
+    {
+      "id": "p03",
+      "group": "people",
+      "mode": "people",
+      "profile": "ml_student_umd",
+      "variant": "no_profile",
+      "query": "Engineering managers on the PyTorch team at Meta",
+      "gold": [],
+      "error": null,
+      "summary_text": "No specific individuals were found because all DuckDuckGo searches were blocked by CAPTCHA. Alternative research strategies have been suggested.",
+      "leads": [],
+      "latency_s": 17.7,
+      "pages": {
+        "fetched": 4,
+        "ok": 4,
+        "blocked": 0,
+        "failed": 0,
+        "needed_js": 0,
+        "urls": [
+          "https://duckduckgo.com/html/?q=Meta+PyTorch+team+engineering+manager+name",
+          "https://duckduckgo.com/html/?q=site%3Apytorch.org+team+contributors+meta",
+          "https://duckduckgo.com/html/?q=%22engineering+manager%22+%22PyTorch%22+%22Meta%22+speaker+conference",
+          "https://duckduckgo.com/html/?q=%22Meta%22+%22PyTorch%22+%22engineering+manager%22+blog+author"
+        ]
+      },
+      "metrics": {
+        "leads": 0,
+        "duplicates": 0,
+        "checkable_leads": 0,
+        "grounded_exact": 0,
+        "grounded_partial": 0,
+        "source_fetched_by_pipeline": 0,
+        "emails_given": 0,
+        "emails_on_page": 0,
+        "relevance_scores": [],
+        "gold_recall": null
+      },
+      "run": 1
+    },
+    {
+      "id": "p04",
+      "group": "people",
+      "mode": "people",
+      "profile": "ml_student_umd",
+      "variant": "no_profile",
+      "query": "Researchers working on LLM inference at Hugging Face",
+      "gold": [],
+      "error": null,
+      "summary_text": "All DuckDuckGo queries were blocked by CAPTCHA, so no people data could be extracted from the scraped results.",
+      "leads": [],
+      "latency_s": 15.8,
+      "pages": {
+        "fetched": 4,
+        "ok": 4,
+        "blocked": 0,
+        "failed": 0,
+        "needed_js": 0,
+        "urls": [
+          "https://duckduckgo.com/html/?q=Hugging+Face+LLM+inference+researcher+name+email",
+          "https://duckduckgo.com/html/?q=site%3Ahuggingface.co+blog+LLM+inference+optimization+author",
+          "https://duckduckgo.com/html/?q=Hugging+Face+LLM+inference+engineer+speaker+conference+2026",
+          "https://duckduckgo.com/html/?q=Hugging+Face+text+generation+inference+team+contributors"
+        ]
+      },
+      "metrics": {
+        "leads": 0,
+        "duplicates": 0,
+        "checkable_leads": 0,
+        "grounded_exact": 0,
+        "grounded_partial": 0,
+        "source_fetched_by_pipeline": 0,
+        "emails_given": 0,
+        "emails_on_page": 0,
+        "relevance_scores": [],
+        "gold_recall": null
+      },
+      "run": 1
+    },
+    {
+      "id": "p05",
+      "group": "people",
+      "mode": "people",
+      "profile": "ml_student_umd",
+      "variant": "no_profile",
+      "query": "Recruiters hiring new grad software engineers at Databricks",
+      "gold": [],
+      "error": null,
+      "summary_text": "No specific individuals were found because all DuckDuckGo searches were blocked by CAPTCHA. The scraped data contained no people or contact information.",
+      "leads": [],
+      "latency_s": 17.7,
+      "pages": {
+        "fetched": 4,
+        "ok": 4,
+        "blocked": 0,
+        "failed": 0,
+        "needed_js": 0,
+        "urls": [
+          "https://duckduckgo.com/html/?q=Databricks+recruiter+%22new+grad%22+OR+%22university+recruiting%22+name+email",
+          "https://duckduckgo.com/html/?q=site%3Adatabricks.com+recruiter+OR+%22talent+acquisition%22+OR+%22university+recruiting%22+team",
+          "https://duckduckgo.com/html/?q=Databricks+%22university+recruiter%22+OR+%22early+career+recruiter%22+OR+%22campus+recruiter%22+software+engineer",
+          "https://duckduckgo.com/html/?q=Databricks+recruiter+hiring+%22software+engineer%22+%22new+grad%22+conference+OR+speaker+OR+blog"
+        ]
+      },
+      "metrics": {
+        "leads": 0,
+        "duplicates": 0,
+        "checkable_leads": 0,
+        "grounded_exact": 0,
+        "grounded_partial": 0,
+        "source_fetched_by_pipeline": 0,
+        "emails_given": 0,
+        "emails_on_page": 0,
+        "relevance_scores": [],
+        "gold_recall": null
+      },
+      "run": 1
+    },
+    {
+      "id": "p06",
+      "group": "people",
+      "mode": "people",
+      "profile": "ml_student_umd",
+      "variant": "no_profile",
+      "query": "Speakers at PyTorch Conference 2025 who work on training efficiency",
+      "gold": [],
+      "error": null,
+      "summary_text": "All four search queries were blocked by DuckDuckGo CAPTCHA challenges, yielding no usable data about PyTorch Conference 2025 speakers.",
+      "leads": [],
+      "latency_s": 16.4,
+      "pages": {
+        "fetched": 4,
+        "ok": 4,
+        "blocked": 0,
+        "failed": 0,
+        "needed_js": 0,
+        "urls": [
+          "https://duckduckgo.com/html/?q=PyTorch+Conference+2025+speakers+training+efficiency",
+          "https://duckduckgo.com/html/?q=site%3Apytorch.org+conference+2025+schedule+training+efficiency+speaker",
+          "https://duckduckgo.com/html/?q=%22PyTorch+Conference+2025%22+speaker+%22training+efficiency%22+name+email",
+          "https://duckduckgo.com/html/?q=PyTorch+2025+conference+talk+%22distributed+training%22+OR+%22training+optimization%22+speaker+author"
+        ]
+      },
+      "metrics": {
+        "leads": 0,
+        "duplicates": 0,
+        "checkable_leads": 0,
+        "grounded_exact": 0,
+        "grounded_partial": 0,
+        "source_fetched_by_pipeline": 0,
+        "emails_given": 0,
+        "emails_on_page": 0,
+        "relevance_scores": [],
+        "gold_recall": null
+      },
+      "run": 1
+    },
+    {
+      "id": "p07",
+      "group": "people",
+      "mode": "people",
+      "profile": "ml_student_umd",
+      "variant": "no_profile",
+      "query": "Maintainers of the vLLM project",
+      "gold": [],
+      "error": null,
+      "summary_text": "All three search attempts were blocked by DuckDuckGo CAPTCHAs, yielding no people data. Direct GitHub and blog sources are recommended.",
+      "leads": [],
+      "latency_s": 15.5,
+      "pages": {
+        "fetched": 3,
+        "ok": 3,
+        "blocked": 0,
+        "failed": 0,
+        "needed_js": 0,
+        "urls": [
+          "https://duckduckgo.com/html/?q=vLLM+project+maintainers+contributors+names",
+          "https://duckduckgo.com/html/?q=site%3Agithub.com+vllm-project+vllm+team+maintainers",
+          "https://duckduckgo.com/html/?q=vLLM+maintainer+speaker+conference+email"
+        ]
+      },
+      "metrics": {
+        "leads": 0,
+        "duplicates": 0,
+        "checkable_leads": 0,
+        "grounded_exact": 0,
+        "grounded_partial": 0,
+        "source_fetched_by_pipeline": 0,
+        "emails_given": 0,
+        "emails_on_page": 0,
+        "relevance_scores": [],
+        "gold_recall": null
+      },
+      "run": 1
+    },
+    {
+      "id": "p08",
+      "group": "people",
+      "mode": "people",
+      "profile": null,
+      "variant": "no_profile",
+      "query": "Founders of AI developer tools startups in San Francisco",
+      "gold": [],
+      "error": null,
+      "summary_text": "No specific individuals were found. All search queries were blocked by DuckDuckGo's CAPTCHA challenge, returning zero usable results.",
+      "leads": [],
+      "latency_s": 18.3,
+      "pages": {
+        "fetched": 4,
+        "ok": 4,
+        "blocked": 0,
+        "failed": 0,
+        "needed_js": 0,
+        "urls": [
+          "https://duckduckgo.com/html/?q=AI+developer+tools+startup+founder+San+Francisco+name",
+          "https://duckduckgo.com/html/?q=%22founder%22+%22AI+developer+tools%22+%22San+Francisco%22+site%3Acrunchbase.com",
+          "https://duckduckgo.com/html/?q=San+Francisco+AI+developer+tools+startup+founder+speaker+conference+2026",
+          "https://duckduckgo.com/html/?q=%22AI+developer+tools%22+%22San+Francisco%22+founder+site%3Atechcrunch.com"
+        ]
+      },
+      "metrics": {
+        "leads": 0,
+        "duplicates": 0,
+        "checkable_leads": 0,
+        "grounded_exact": 0,
+        "grounded_partial": 0,
+        "source_fetched_by_pipeline": 0,
+        "emails_given": 0,
+        "emails_on_page": 0,
+        "relevance_scores": [],
+        "gold_recall": null
+      },
+      "run": 1
+    },
+    {
+      "id": "p09",
+      "group": "people",
+      "mode": "people",
+      "profile": "security_engineer_dc",
+      "variant": "no_profile",
+      "query": "Security engineers at Cloudflare who write on the Cloudflare blog",
+      "gold": [],
+      "error": null,
+      "summary_text": "All three search attempts were blocked by DuckDuckGo's bot detection, so no actual people data was retrieved. A direct scrape of blog.cloudflare.com/tag/security or a Google-based search would yield better results.",
+      "leads": [],
+      "latency_s": 15.3,
+      "pages": {
+        "fetched": 3,
+        "ok": 2,
+        "blocked": 1,
+        "failed": 0,
+        "needed_js": 0,
+        "urls": [
+          "https://duckduckgo.com/html/?q=site%3Ablog.cloudflare.com+security+engineer+author",
+          "https://duckduckgo.com/html/?q=Cloudflare+security+engineer+blog+author+name",
+          "https://duckduckgo.com/html/?q=Cloudflare+security+team+engineer+speaker+conference"
+        ]
+      },
+      "metrics": {
+        "leads": 0,
+        "duplicates": 0,
+        "checkable_leads": 0,
+        "grounded_exact": 0,
+        "grounded_partial": 0,
+        "source_fetched_by_pipeline": 0,
+        "emails_given": 0,
+        "emails_on_page": 0,
+        "relevance_scores": [],
+        "gold_recall": null
+      },
+      "run": 1
+    },
+    {
+      "id": "p10",
+      "group": "people",
+      "mode": "people",
+      "profile": "security_engineer_dc",
+      "variant": "no_profile",
+      "query": "Heads of security at fintech startups in New York",
+      "gold": [],
+      "error": null,
+      "summary_text": "The scraped search results were empty and did not contain any identifiable individuals. The DuckDuckGo queries for heads of security at fintech startups in New York returned no usable content. More targeted searches against specific company websites, conference agendas, or news articles are recommended.",
+      "leads": [],
+      "latency_s": 47.1,
+      "pages": {
+        "fetched": 4,
+        "ok": 0,
+        "blocked": 4,
+        "failed": 0,
+        "needed_js": 4,
+        "urls": [
+          "https://duckduckgo.com/html/?q=%22head+of+security%22+%22fintech%22+%22New+York%22+name+email",
+          "https://duckduckgo.com/html/?q=%22CISO%22+OR+%22VP+security%22+fintech+startup+%22New+York%22+speaker+conference",
+          "https://duckduckgo.com/html/?q=site%3Acrunchbase.com+fintech+%22New+York%22+%22head+of+security%22+OR+%22chief+information+security%22",
+          "https://duckduckgo.com/html/?q=%22fintech%22+%22New+York%22+%22security+team%22+OR+%22our+team%22+%22head+of+security%22+OR+%22CISO%22"
+        ]
+      },
+      "metrics": {
+        "leads": 0,
+        "duplicates": 0,
+        "checkable_leads": 0,
+        "grounded_exact": 0,
+        "grounded_partial": 0,
+        "source_fetched_by_pipeline": 0,
+        "emails_given": 0,
+        "emails_on_page": 0,
+        "relevance_scores": [],
+        "gold_recall": null
+      },
+      "run": 1
+    },
+    {
+      "id": "p11",
+      "group": "people",
+      "mode": "people",
+      "profile": "security_engineer_dc",
+      "variant": "no_profile",
+      "query": "Detection engineering leads at CrowdStrike",
+      "gold": [],
+      "error": null,
+      "summary_text": "The scraped data contained no usable results — all search pages returned empty or blocked content. No real individuals could be identified from the provided data.",
+      "leads": [],
+      "latency_s": 31.8,
+      "pages": {
+        "fetched": 4,
+        "ok": 0,
+        "blocked": 4,
+        "failed": 0,
+        "needed_js": 4,
+        "urls": [
+          "https://duckduckgo.com/html/?q=CrowdStrike+detection+engineering+lead+name+email",
+          "https://duckduckgo.com/html/?q=site%3Acrowdstrike.com+detection+engineering+team+author+blog",
+          "https://duckduckgo.com/html/?q=CrowdStrike+detection+engineering+lead+speaker+conference",
+          "https://duckduckgo.com/html/?q=%22CrowdStrike%22+%22detection+engineering%22+%22lead%22+OR+%22manager%22+OR+%22director%22"
+        ]
+      },
+      "metrics": {
+        "leads": 0,
+        "duplicates": 0,
+        "checkable_leads": 0,
+        "grounded_exact": 0,
+        "grounded_partial": 0,
+        "source_fetched_by_pipeline": 0,
+        "emails_given": 0,
+        "emails_on_page": 0,
+        "relevance_scores": [],
+        "gold_recall": null
+      },
+      "run": 1
+    },
+    {
+      "id": "p12",
+      "group": "people",
+      "mode": "people",
+      "profile": null,
+      "variant": "no_profile",
+      "query": "Product managers working on Kubernetes at Google",
+      "gold": [],
+      "error": null,
+      "summary_text": "No specific individuals were found in the scraped data. All four DuckDuckGo queries returned empty or blocked results, which is common for people-finding queries on general search engines.",
+      "leads": [],
+      "latency_s": 35.3,
+      "pages": {
+        "fetched": 4,
+        "ok": 0,
+        "blocked": 4,
+        "failed": 0,
+        "needed_js": 4,
+        "urls": [
+          "https://duckduckgo.com/html/?q=Google+Kubernetes+product+manager+name+email",
+          "https://duckduckgo.com/html/?q=site%3Acloud.google.com+Kubernetes+product+manager+author",
+          "https://duckduckgo.com/html/?q=Google+Kubernetes+GKE+product+manager+speaker+conference+KubeCon",
+          "https://duckduckgo.com/html/?q=%22Google%22+%22product+manager%22+%22Kubernetes%22+OR+%22GKE%22+team"
+        ]
+      },
+      "metrics": {
+        "leads": 0,
+        "duplicates": 0,
+        "checkable_leads": 0,
+        "grounded_exact": 0,
+        "grounded_partial": 0,
+        "source_fetched_by_pipeline": 0,
+        "emails_given": 0,
+        "emails_on_page": 0,
+        "relevance_scores": [],
+        "gold_recall": null
+      },
+      "run": 1
+    },
+    {
+      "id": "c01",
+      "group": "companies",
+      "mode": "companies",
+      "profile": "security_engineer_dc",
+      "variant": "no_profile",
+      "query": "Cybersecurity startups hiring in DC",
+      "gold": [],
+      "error": null,
+      "summary_text": "No company data was found in the scraped results — all search pages returned empty content. The queries may have been blocked or returned no extractable text. Consider retrying with direct site searches on LinkedIn, Wellfound (AngelList), BuiltIn DC, or Crunchbase.",
+      "leads": [],
+      "latency_s": 32.7,
+      "pages": {
+        "fetched": 4,
+        "ok": 0,
+        "blocked": 4,
+        "failed": 0,
+        "needed_js": 4,
+        "urls": [
+          "https://duckduckgo.com/html/?q=cybersecurity+startups+hiring+in+Washington+DC+2026",
+          "https://duckduckgo.com/html/?q=site%3Abuiltin.com+cybersecurity+startups+Washington+DC",
+          "https://duckduckgo.com/html/?q=site%3Aycombinator.com%2Fcompanies+cybersecurity+Washington+DC",
+          "https://duckduckgo.com/html/?q=top+cybersecurity+companies+hiring+DC+area+site%3Awellfound.com"
+        ]
+      },
+      "metrics": {
+        "leads": 0,
+        "duplicates": 0,
+        "checkable_leads": 0,
+        "grounded_exact": 0,
+        "grounded_partial": 0,
+        "source_fetched_by_pipeline": 0,
+        "emails_given": 0,
+        "emails_on_page": 0,
+        "relevance_scores": [],
+        "gold_recall": null
+      },
+      "run": 1
+    },
+    {
+      "id": "c02",
+      "group": "companies",
+      "mode": "companies",
+      "profile": "ml_student_umd",
+      "variant": "no_profile",
+      "query": "Early-stage AI startups hiring ML engineers in the Bay Area",
+      "gold": [],
+      "error": null,
+      "summary_text": "No company data was found in the scraped results — all pages returned empty content. This likely means the search engine blocked scraping or the pages failed to load. To find early-stage AI startups hiring ML engineers in the Bay Area, consider browsing YC's startup directory (ycombinator.com/companies), Wellfound (formerly AngelList), or BuiltIn SF directly.",
+      "leads": [],
+      "latency_s": 35.8,
+      "pages": {
+        "fetched": 4,
+        "ok": 0,
+        "blocked": 4,
+        "failed": 0,
+        "needed_js": 4,
+        "urls": [
+          "https://duckduckgo.com/html/?q=early+stage+AI+startups+hiring+ML+engineers+Bay+Area+2026",
+          "https://duckduckgo.com/html/?q=site%3Aycombinator.com%2Fcompanies+AI+machine+learning+San+Francisco+Bay+Area",
+          "https://duckduckgo.com/html/?q=site%3Abuiltin.com+AI+startups+hiring+machine+learning+engineer+San+Francisco",
+          "https://duckduckgo.com/html/?q=top+seed+series+A+AI+startups+Bay+Area+hiring+machine+learning+2025+2026"
+        ]
+      },
+      "metrics": {
+        "leads": 0,
+        "duplicates": 0,
+        "checkable_leads": 0,
+        "grounded_exact": 0,
+        "grounded_partial": 0,
+        "source_fetched_by_pipeline": 0,
+        "emails_given": 0,
+        "emails_on_page": 0,
+        "relevance_scores": [],
+        "gold_recall": null
+      },
+      "run": 1
+    },
+    {
+      "id": "c03",
+      "group": "companies",
+      "mode": "companies",
+      "profile": "ml_student_umd",
+      "variant": "no_profile",
+      "query": "Y Combinator companies building LLM evaluation tools",
+      "gold": [],
+      "error": null,
+      "summary_text": "No company data was successfully scraped from the search results. The queries returned empty pages, likely due to scraping restrictions on DuckDuckGo or YC's site. To find YC companies in the LLM evaluation space, try browsing https://www.ycombinator.com/companies directly with filters, or search for specific known companies like Braintrust, Humanloop, Langfuse, Patronus AI, or Baserun.",
+      "leads": [],
+      "latency_s": 29.5,
+      "pages": {
+        "fetched": 3,
+        "ok": 0,
+        "blocked": 3,
+        "failed": 0,
+        "needed_js": 3,
+        "urls": [
+          "https://duckduckgo.com/html/?q=site%3Aycombinator.com%2Fcompanies+LLM+evaluation",
+          "https://duckduckgo.com/html/?q=Y+Combinator+startups+LLM+evaluation+tools+2024+2025",
+          "https://duckduckgo.com/html/?q=YC+companies+AI+model+evaluation+benchmarking+tools+list"
+        ]
+      },
+      "metrics": {
+        "leads": 0,
+        "duplicates": 0,
+        "checkable_leads": 0,
+        "grounded_exact": 0,
+        "grounded_partial": 0,
+        "source_fetched_by_pipeline": 0,
+        "emails_given": 0,
+        "emails_on_page": 0,
+        "relevance_scores": [],
+        "gold_recall": null
+      },
+      "run": 1
+    },
+    {
+      "id": "c04",
+      "group": "companies",
+      "mode": "companies",
+      "profile": "security_engineer_dc",
+      "variant": "no_profile",
+      "query": "Defense tech startups in Northern Virginia",
+      "gold": [],
+      "error": null,
+      "summary_text": "No company data was found in the scraped results — the search pages returned empty content. Northern Virginia (Arlington, Reston, McLean, Tysons) is a well-known hub for defense tech startups due to proximity to the Pentagon and intelligence agencies, but the scraper did not capture usable data from these queries.",
+      "leads": [],
+      "latency_s": 30.4,
+      "pages": {
+        "fetched": 4,
+        "ok": 0,
+        "blocked": 4,
+        "failed": 0,
+        "needed_js": 4,
+        "urls": [
+          "https://duckduckgo.com/html/?q=defense+tech+startups+Northern+Virginia+2026",
+          "https://duckduckgo.com/html/?q=site%3Abuiltin.com+defense+startups+Virginia",
+          "https://duckduckgo.com/html/?q=top+defense+technology+companies+NoVA+Arlington+Reston+startup",
+          "https://duckduckgo.com/html/?q=site%3Aycombinator.com%2Fcompanies+defense+Virginia"
+        ]
+      },
+      "metrics": {
+        "leads": 0,
+        "duplicates": 0,
+        "checkable_leads": 0,
+        "grounded_exact": 0,
+        "grounded_partial": 0,
+        "source_fetched_by_pipeline": 0,
+        "emails_given": 0,
+        "emails_on_page": 0,
+        "relevance_scores": [],
+        "gold_recall": null
+      },
+      "run": 1
+    },
+    {
+      "id": "c05",
+      "group": "companies",
+      "mode": "companies",
+      "profile": null,
+      "variant": "no_profile",
+      "query": "Climate tech startups hiring software engineers",
+      "gold": [],
+      "error": null,
+      "summary_text": "No real company data was found in the scraped results — all pages returned empty or blocked content. Unable to extract any verified climate tech startups from the provided data.",
+      "leads": [],
+      "latency_s": 33.1,
+      "pages": {
+        "fetched": 4,
+        "ok": 0,
+        "blocked": 4,
+        "failed": 0,
+        "needed_js": 4,
+        "urls": [
+          "https://duckduckgo.com/html/?q=top+climate+tech+startups+hiring+software+engineers+2026",
+          "https://duckduckgo.com/html/?q=site%3Abuiltin.com+climate+tech+startups+software+engineer+jobs",
+          "https://duckduckgo.com/html/?q=site%3Aworkatastartup.com+climate+tech+software+engineer",
+          "https://duckduckgo.com/html/?q=climate+tech+startups+series+A+B+hiring+engineers+2026"
+        ]
+      },
+      "metrics": {
+        "leads": 0,
+        "duplicates": 0,
+        "checkable_leads": 0,
+        "grounded_exact": 0,
+        "grounded_partial": 0,
+        "source_fetched_by_pipeline": 0,
+        "emails_given": 0,
+        "emails_on_page": 0,
+        "relevance_scores": [],
+        "gold_recall": null
+      },
+      "run": 1
+    },
+    {
+      "id": "c06",
+      "group": "companies",
+      "mode": "companies",
+      "profile": "ml_student_umd",
+      "variant": "no_profile",
+      "query": "Startups that sponsor visas for new grad engineers",
+      "gold": [],
+      "error": null,
+      "summary_text": "No company data was extracted from the scraped results — the search pages returned empty or blocked content. To find startups sponsoring visas for new grad engineers, consider directly browsing Wellfound.com with visa sponsorship filters, checking H-1B employer databases (e.g., h1bdata.info), or exploring YC company directories.",
+      "leads": [],
+      "latency_s": 36.9,
+      "pages": {
+        "fetched": 4,
+        "ok": 0,
+        "blocked": 4,
+        "failed": 0,
+        "needed_js": 4,
+        "urls": [
+          "https://duckduckgo.com/html/?q=startups+that+sponsor+H1B+visas+for+new+grad+software+engineers+2026",
+          "https://duckduckgo.com/html/?q=site%3Awellfound.com+startups+visa+sponsorship+new+grad+engineer",
+          "https://duckduckgo.com/html/?q=top+startups+sponsoring+work+visas+entry+level+engineers+site%3Abuiltin.com",
+          "https://duckduckgo.com/html/?q=YC+startups+H1B+visa+sponsorship+new+grad+2025+2026"
+        ]
+      },
+      "metrics": {
+        "leads": 0,
+        "duplicates": 0,
+        "checkable_leads": 0,
+        "grounded_exact": 0,
+        "grounded_partial": 0,
+        "source_fetched_by_pipeline": 0,
+        "emails_given": 0,
+        "emails_on_page": 0,
+        "relevance_scores": [],
+        "gold_recall": null
+      },
+      "run": 1
+    },
+    {
+      "id": "c07",
+      "group": "companies",
+      "mode": "companies",
+      "profile": "security_engineer_dc",
+      "variant": "no_profile",
+      "query": "Series A cloud security companies",
+      "gold": [],
+      "error": null,
+      "summary_text": "No results were found because all search attempts were blocked by DuckDuckGo's bot-detection CAPTCHA. No real company data was available in the scraped content to extract leads from.",
+      "leads": [],
+      "latency_s": 13.8,
+      "pages": {
+        "fetched": 3,
+        "ok": 3,
+        "blocked": 0,
+        "failed": 0,
+        "needed_js": 0,
+        "urls": [
+          "https://duckduckgo.com/html/?q=Series+A+cloud+security+startups+2026",
+          "https://duckduckgo.com/html/?q=site%3Anews.crunchbase.com+Series+A+cloud+security",
+          "https://duckduckgo.com/html/?q=site%3Abuiltin.com+cloud+security+startups+Series+A"
+        ]
+      },
+      "metrics": {
+        "leads": 0,
+        "duplicates": 0,
+        "checkable_leads": 0,
+        "grounded_exact": 0,
+        "grounded_partial": 0,
+        "source_fetched_by_pipeline": 0,
+        "emails_given": 0,
+        "emails_on_page": 0,
+        "relevance_scores": [],
+        "gold_recall": null
+      },
+      "run": 1
+    },
+    {
+      "id": "a01",
+      "group": "alumni",
+      "mode": "people",
+      "profile": "ml_student_umd",
+      "variant": "no_profile",
+      "query": "SWE engineers from UMD College Park at Meta",
+      "gold": [],
+      "error": null,
+      "summary_text": "No specific individuals were found because all DuckDuckGo searches were blocked by CAPTCHA bot detection. The scraped data contained no people information.",
+      "leads": [],
+      "latency_s": 16.1,
+      "pages": {
+        "fetched": 4,
+        "ok": 4,
+        "blocked": 0,
+        "failed": 0,
+        "needed_js": 0,
+        "urls": [
+          "https://duckduckgo.com/html/?q=UMD+%22University+of+Maryland%22+alumni+software+engineer+Meta+Facebook+name",
+          "https://duckduckgo.com/html/?q=%22University+of+Maryland%22+%22Meta%22+OR+%22Facebook%22+software+engineer+speaker+conference",
+          "https://duckduckgo.com/html/?q=site%3Aengineering.fb.com+%22University+of+Maryland%22+engineer",
+          "https://duckduckgo.com/html/?q=%22UMD%22+OR+%22College+Park%22+%22Meta%22+OR+%22Facebook%22+software+engineer+email"
+        ]
+      },
+      "metrics": {
+        "leads": 0,
+        "duplicates": 0,
+        "checkable_leads": 0,
+        "grounded_exact": 0,
+        "grounded_partial": 0,
+        "source_fetched_by_pipeline": 0,
+        "emails_given": 0,
+        "emails_on_page": 0,
+        "relevance_scores": [],
+        "gold_recall": null
+      },
+      "run": 1
+    },
+    {
+      "id": "a02",
+      "group": "alumni",
+      "mode": "people",
+      "profile": "ml_student_umd",
+      "variant": "no_profile",
+      "query": "University of Maryland alumni working in machine learning at Google",
+      "gold": [],
+      "error": null,
+      "summary_text": "No specific individuals were found. The scraped data contained only DuckDuckGo CAPTCHA pages, so no actual search results were retrieved.",
+      "leads": [],
+      "latency_s": 16.5,
+      "pages": {
+        "fetched": 4,
+        "ok": 4,
+        "blocked": 0,
+        "failed": 0,
+        "needed_js": 0,
+        "urls": [
+          "https://duckduckgo.com/html/?q=University+of+Maryland+alumni+Google+machine+learning+engineer+name",
+          "https://duckduckgo.com/html/?q=%22University+of+Maryland%22+%22Google%22+%22machine+learning%22+speaker+conference",
+          "https://duckduckgo.com/html/?q=site%3Aresearch.google+%22University+of+Maryland%22+machine+learning+author",
+          "https://duckduckgo.com/html/?q=%22UMD%22+OR+%22University+of+Maryland%22+%22Google%22+%22machine+learning%22+blog+author+email"
+        ]
+      },
+      "metrics": {
+        "leads": 0,
+        "duplicates": 0,
+        "checkable_leads": 0,
+        "grounded_exact": 0,
+        "grounded_partial": 0,
+        "source_fetched_by_pipeline": 0,
+        "emails_given": 0,
+        "emails_on_page": 0,
+        "relevance_scores": [],
+        "gold_recall": null
+      },
+      "run": 1
+    },
+    {
+      "id": "a03",
+      "group": "alumni",
+      "mode": "people",
+      "profile": "ml_student_umd",
+      "variant": "no_profile",
+      "query": "UMD alumni who founded startups",
+      "gold": [],
+      "error": null,
+      "summary_text": "No specific individuals found. All four DuckDuckGo searches were blocked by CAPTCHA bot detection, returning zero usable content. Alternative search strategies have been suggested.",
+      "leads": [],
+      "latency_s": 17.3,
+      "pages": {
+        "fetched": 4,
+        "ok": 4,
+        "blocked": 0,
+        "failed": 0,
+        "needed_js": 0,
+        "urls": [
+          "https://duckduckgo.com/html/?q=University+of+Maryland+alumni+startup+founder+CEO",
+          "https://duckduckgo.com/html/?q=%22University+of+Maryland%22+alumni+founder+%22co-founder%22+startup+site%3Atechstars.com+OR+site%3Acrunchbase.com",
+          "https://duckduckgo.com/html/?q=UMD+Dingman+Center+entrepreneurs+founders+alumni",
+          "https://duckduckgo.com/html/?q=%22University+of+Maryland%22+%22founded%22+startup+speaker+event+name+email"
+        ]
+      },
+      "metrics": {
+        "leads": 0,
+        "duplicates": 0,
+        "checkable_leads": 0,
+        "grounded_exact": 0,
+        "grounded_partial": 0,
+        "source_fetched_by_pipeline": 0,
+        "emails_given": 0,
+        "emails_on_page": 0,
+        "relevance_scores": [],
+        "gold_recall": null
+      },
+      "run": 1
+    },
+    {
+      "id": "a04",
+      "group": "alumni",
+      "mode": "people",
+      "profile": "security_engineer_dc",
+      "variant": "no_profile",
+      "query": "Virginia Tech alumni working in security at Amazon",
+      "gold": [],
+      "error": null,
+      "summary_text": "No specific individuals were found. All four DuckDuckGo queries were blocked by CAPTCHA bot detection, returning zero usable results.",
+      "leads": [],
+      "latency_s": 15.7,
+      "pages": {
+        "fetched": 4,
+        "ok": 4,
+        "blocked": 0,
+        "failed": 0,
+        "needed_js": 0,
+        "urls": [
+          "https://duckduckgo.com/html/?q=%22Virginia+Tech%22+alumni+Amazon+security+engineer+name",
+          "https://duckduckgo.com/html/?q=%22Virginia+Tech%22+%22Amazon+Web+Services%22+security+speaker+conference",
+          "https://duckduckgo.com/html/?q=site%3Aamazon.jobs+%22Virginia+Tech%22+security",
+          "https://duckduckgo.com/html/?q=%22Virginia+Tech%22+Amazon+cybersecurity+blog+author"
+        ]
+      },
+      "metrics": {
+        "leads": 0,
+        "duplicates": 0,
+        "checkable_leads": 0,
+        "grounded_exact": 0,
+        "grounded_partial": 0,
+        "source_fetched_by_pipeline": 0,
+        "emails_given": 0,
+        "emails_on_page": 0,
+        "relevance_scores": [],
+        "gold_recall": null
+      },
+      "run": 1
+    },
+    {
+      "id": "a05",
+      "group": "alumni",
+      "mode": "people",
+      "profile": "ml_student_umd",
+      "variant": "no_profile",
+      "query": "Former Amazon engineers now working at AI startups",
+      "gold": [],
+      "error": null,
+      "summary_text": "No specific individuals were found because all DuckDuckGo searches were blocked by CAPTCHA bot detection. The scraped data contains no people or article content.",
+      "leads": [],
+      "latency_s": 17.1,
+      "pages": {
+        "fetched": 4,
+        "ok": 4,
+        "blocked": 0,
+        "failed": 0,
+        "needed_js": 0,
+        "urls": [
+          "https://duckduckgo.com/html/?q=former+Amazon+engineer+now+AI+startup+founder+name",
+          "https://duckduckgo.com/html/?q=%22ex-Amazon%22+%22AI+startup%22+engineer+cofounder+email",
+          "https://duckduckgo.com/html/?q=%22previously+at+Amazon%22+machine+learning+engineer+startup+speaker+conference",
+          "https://duckduckgo.com/html/?q=site%3Atechcrunch.com+%22former+Amazon%22+AI+startup+engineer"
+        ]
+      },
+      "metrics": {
+        "leads": 0,
+        "duplicates": 0,
+        "checkable_leads": 0,
+        "grounded_exact": 0,
+        "grounded_partial": 0,
+        "source_fetched_by_pipeline": 0,
+        "emails_given": 0,
+        "emails_on_page": 0,
+        "relevance_scores": [],
+        "gold_recall": null
+      },
+      "run": 1
+    },
+    {
+      "id": "a06",
+      "group": "alumni",
+      "mode": "people",
+      "profile": "ml_student_umd",
+      "variant": "no_profile",
+      "query": "People who did their PhD at UMD and now work at OpenAI",
+      "gold": [],
+      "error": null,
+      "summary_text": "All three DuckDuckGo searches were blocked by CAPTCHA, so no people data was retrieved. Alternative search engines or direct site searches are needed.",
+      "leads": [],
+      "latency_s": 14.4,
+      "pages": {
+        "fetched": 3,
+        "ok": 3,
+        "blocked": 0,
+        "failed": 0,
+        "needed_js": 0,
+        "urls": [
+          "https://duckduckgo.com/html/?q=UMD+PhD+alumni+OpenAI+engineer+researcher",
+          "https://duckduckgo.com/html/?q=%22University+of+Maryland%22+PhD+%22OpenAI%22+site%3Aopenai.com",
+          "https://duckduckgo.com/html/?q=%22University+of+Maryland%22+PhD+OpenAI+speaker+conference+author"
+        ]
+      },
+      "metrics": {
+        "leads": 0,
+        "duplicates": 0,
+        "checkable_leads": 0,
+        "grounded_exact": 0,
+        "grounded_partial": 0,
+        "source_fetched_by_pipeline": 0,
+        "emails_given": 0,
+        "emails_on_page": 0,
+        "relevance_scores": [],
+        "gold_recall": null
+      },
+      "run": 1
+    }
+  ]
+}

@@ -1,4 +1,5 @@
-from fastapi import FastAPI, UploadFile, File, Request, Depends, HTTPException
+from fastapi import FastAPI, UploadFile, File, Request, Depends, HTTPException, BackgroundTasks, Path
+from contextlib import asynccontextmanager
 import jwt
 import secrets
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,7 +7,7 @@ from browser_use import Browser, SystemPrompt
 from browser_use.agent.service import Agent
 from browser_use.agent.views import AgentOutput
 from browser_use.browser.browser import BrowserConfig
-from llm_provider import get_agent_llm, claude_code_invoke
+from llm_provider import get_agent_llm, claude_code_invoke, LLMUnavailableError
 from langchain_core.messages import BaseMessage
 from collections import deque
 from threading import Lock
@@ -25,7 +26,7 @@ from datetime import datetime, timezone, timedelta
 from urllib.parse import quote_plus
 from pymongo import MongoClient
 from pymongo.errors import OperationFailure
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from motor.motor_asyncio import AsyncIOMotorClient
 # from langchain_groq import ChatGroq
 import pipeline
@@ -37,6 +38,11 @@ import re
 from planner import parse_json
 from pypdf import PdfReader
 from resume_profile import extract_resume_profile
+from memory import (
+    update_memory, build_user_context, apply_exclusions,
+    list_memory, edit_fact, delete_fact, clear_memory, add_fact, MemoryFull,
+    FactKind, MAX_TEXT, MAX_FACTS,
+)
 
 
 class CustomSystemPrompt(SystemPrompt):
@@ -256,7 +262,20 @@ def normalize_result(result):
     return result, []
 
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Runs once at startup. create_index is a no-op if the index already exists.
+    for name, coll in (("user_keys", user_keys_collection), ("user_memory", user_memory_collection)):
+        if coll is None:
+            continue
+        try:
+            await coll.create_index("user_id", unique=True)
+        except Exception as e:
+            print(f"WARNING: could not create {name} index: {e}")
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 origins = ["http://localhost:5173"]
 app.add_middleware(
@@ -266,6 +285,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(LLMUnavailableError)
+async def llm_unavailable_handler(request: Request, exc: LLMUnavailableError):
+    # Log only the error kind; the detail can echo prompt text.
+    print(f"WARNING: LLM unavailable on {request.url.path} (limit_reached={exc.limit_reached})")
+    message = (
+        "Reacher's AI service has hit its usage limit. Please try again later."
+        if exc.limit_reached
+        else "Reacher's AI service is unavailable right now. Please try again in a few minutes."
+    )
+    return JSONResponse({"error": message}, status_code=503)
 
 SYSTEM_PROMPT = """You are a people-finding assistant for cold outreach. Follow these rules:
 
@@ -308,10 +339,14 @@ if mongo_client is not None:
     mongo_db = mongo_client["reacher"]
     users_collection = mongo_db["users"]
     chats_collection = mongo_db["chats"]
+    user_keys_collection = mongo_db["user_keys"]
+    user_memory_collection = mongo_db["user_memory"]
 else:
     mongo_db = None
     users_collection = None
     chats_collection = None
+    user_keys_collection = None
+    user_memory_collection = None
 
 
 user_current_chat = {}
@@ -556,8 +591,41 @@ async def uploadResume(file: UploadFile = File(...), user: dict = Depends(get_cu
 
 #     return {"response": assistant_response, "session_id": query.session_id}
 
+RECENT_QUERY_COUNT = 5
+
+
+async def _recent_queries(user_id: str, limit: int = RECENT_QUERY_COUNT) -> list[str]:
+    """The user's last few messages across all chats, oldest first."""
+    if chats_collection is None:
+        return []
+    pipeline_stages = [
+        {"$match": {"user_id": user_id}},
+        {"$unwind": "$messages"},
+        {"$match": {"messages.role": "user"}},
+        {"$sort": {"messages.timestamp": -1}},
+        {"$limit": limit},
+        {"$project": {"_id": 0, "content": "$messages.content"}},
+    ]
+    rows = await chats_collection.aggregate(pipeline_stages).to_list(length=limit)
+    return [r["content"] for r in reversed(rows) if isinstance(r.get("content"), str)]
+
+
+async def _update_memory_safely(user_id: str, message: str, mode: str, recent: list[str]):
+    """Background job: never raises, never logs user text."""
+    try:
+        await update_memory(
+            user_memory_collection, user_keys_collection, user_id, message, mode, recent
+        )
+    except Exception as e:
+        print(f"WARNING: memory update failed: {type(e).__name__}")
+
+
 @app.post("/processQuery")
-async def process_query(query: ChatRequest, current_user: dict = Depends(get_current_user)):
+async def process_query(
+    query: ChatRequest,
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(get_current_user),
+):
     now = datetime.now(timezone.utc)
     user_id = current_user["email"]
 
@@ -568,6 +636,15 @@ async def process_query(query: ChatRequest, current_user: dict = Depends(get_cur
     user = await users_collection.find_one({"email": user_id}) if users_collection is not None else None
     resume_text = user.get("resume_text", "") if user else ""
     resume_profile = await ensure_resume_profile(user_id, user)
+
+    # Read recent queries before this message is saved, so it isn't counted twice.
+    try:
+        recent = await _recent_queries(user_id)
+    except Exception:
+        recent = []
+    ctx = await build_user_context(
+        user_memory_collection, user_keys_collection, user_id, resume_profile, recent
+    )
 
     classify_prompt = f"""Classify this query into exactly one category:
     - PERSON: asking to find specific people, professionals, or employees
@@ -586,21 +663,30 @@ async def process_query(query: ChatRequest, current_user: dict = Depends(get_cur
 
     if mode == "PERSON":
         result = await pipeline.find_leads(
-            query.message, llm, resume_text, resume_profile=resume_profile
+            query.message, llm, resume_text, resume_profile=resume_profile, memory=ctx.text
         )
     elif mode == "COMPANY":
         result = await pipeline.find_companies(
-            query.message, llm, resume_text, resume_profile=resume_profile
+            query.message, llm, resume_text, resume_profile=resume_profile, memory=ctx.text
         )
     else:
         system = REACHER_SYSTEM_PROMPT
         if resume_text:
             system += f"\n\nThe user's resume (use it to personalize answers):\n{resume_text[:3000]}"
+        if ctx.facts:
+            system += f"\n\nWhat the user has told Reacher before (respect it):\n{ctx.text}"
 
         direct_text = await claude_code_invoke(system=system, user=query.message)
         result = {"summary": direct_text, "leads": []}
 
     summary, leads = normalize_result(result)
+    kept = apply_exclusions(leads, ctx.facts)
+    if len(kept) != len(leads):
+        print(f"INFO: exclusions removed {len(leads) - len(kept)} lead(s)")   # count only, no names
+    leads = kept
+
+    if user_memory_collection is not None and user_keys_collection is not None:
+        background_tasks.add_task(_update_memory_safely, user_id, query.message, mode, ctx.recent)
 
     assistant_msg = {
         "role": "assistant",
@@ -629,6 +715,109 @@ async def process_query(query: ChatRequest, current_user: dict = Depends(get_cur
     )
 
     return {"response": summary, "leads": leads, "session_id": query.session_id}
+
+
+# --- /memory: the user's own view of what Reacher remembers -----------------
+# user_id always comes from the JWT cookie, never from the request,
+# so a user can only ever read or change their own memory.
+
+FACT_ID = Path(..., pattern=r"^f_[0-9a-f]{8}$")
+
+
+def _clean_fact_text(v):
+    if v is None:
+        return v
+    v = " ".join(v.split())
+    if not v:
+        raise ValueError("text cannot be empty")
+    return v
+
+
+class MemoryPatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    text: str | None = Field(default=None, max_length=MAX_TEXT)
+    kind: FactKind | None = None
+    pinned: bool | None = None
+
+    @field_validator("text")
+    @classmethod
+    def text_not_blank(cls, v):
+        return _clean_fact_text(v)
+
+
+class MemoryCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    kind: FactKind
+    text: str = Field(max_length=MAX_TEXT)
+    pinned: bool = False
+
+    @field_validator("text")
+    @classmethod
+    def text_not_blank(cls, v):
+        return _clean_fact_text(v)
+
+
+def _require_memory_db():
+    if user_memory_collection is None or user_keys_collection is None:
+        raise HTTPException(status_code=503, detail="Memory is unavailable right now")
+
+
+@app.get("/memory")
+async def get_memory(current_user: dict = Depends(get_current_user)):
+    _require_memory_db()
+    facts = await list_memory(user_memory_collection, user_keys_collection, current_user["email"])
+    return {"facts": facts}
+
+
+@app.post("/memory", status_code=201)
+async def create_memory_fact(body: MemoryCreate, current_user: dict = Depends(get_current_user)):
+    _require_memory_db()
+    try:
+        fact = await add_fact(
+            user_memory_collection, user_keys_collection, current_user["email"],
+            body.kind, body.text, pinned=body.pinned,
+        )
+    except MemoryFull:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Memory is full ({MAX_FACTS} items). Delete something first.",
+        )
+    return {"fact": fact}
+
+
+@app.patch("/memory/{fact_id}")
+async def patch_memory_fact(
+    body: MemoryPatch,
+    fact_id: str = FACT_ID,
+    current_user: dict = Depends(get_current_user),
+):
+    _require_memory_db()
+    if body.text is None and body.kind is None and body.pinned is None:
+        raise HTTPException(status_code=422, detail="Nothing to change")
+    fact = await edit_fact(
+        user_memory_collection, user_keys_collection, current_user["email"], fact_id,
+        text=body.text, kind=body.kind, pinned=body.pinned,
+    )
+    if fact is None:
+        raise HTTPException(status_code=404, detail="Fact not found")
+    return {"fact": fact}
+
+
+@app.delete("/memory/{fact_id}")
+async def delete_memory_fact(fact_id: str = FACT_ID, current_user: dict = Depends(get_current_user)):
+    _require_memory_db()
+    if not await delete_fact(user_memory_collection, current_user["email"], fact_id):
+        raise HTTPException(status_code=404, detail="Fact not found")
+    return {"deleted": fact_id}
+
+
+@app.delete("/memory")
+async def delete_all_memory(current_user: dict = Depends(get_current_user)):
+    _require_memory_db()
+    await clear_memory(user_memory_collection, current_user["email"])
+    return {"cleared": True}
 
 
 async def find_contact_for_person(person, browser, llm, timeout=45):

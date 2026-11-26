@@ -16,6 +16,9 @@ RULES:
 - The user query is the primary intent — never ignore it in favor of the profile
 - When a profile is provided, combine query intent with profile skills, companies, schools, locations, and target roles
 - Prefer warm-path angles when they fit the query (alumni + company, shared stack + team pages, industry speakers)
+- Follow USER MEMORY: never search for anything it excludes; use its preferences and goals to shape searches.
+  Items marked (guess) are hints only.
+- Use RECENT QUERIES only to understand follow-ups (e.g. "narrow it down to Seattle"); otherwise plan for the current query.
 
 GOOD SEARCH STRATEGIES for finding people:
 - "site:nvidia.com ML engineer team" — finds team pages
@@ -34,7 +37,9 @@ Respond with ONLY valid JSON, no markdown:
 User query: {query}
 
 USER PROFILE (structured):
-{profile}"""
+{profile}
+
+{memory}"""
 
 def parse_json(text: str):
   """Parse LLM JSON output, tolerating JSON fences"""
@@ -46,11 +51,15 @@ def parse_json(text: str):
   return json.loads(cleaned.strip())
 
 
-async def generate_plan(query, prompt=None, profile=None):
+async def generate_plan(query, prompt=None, profile=None, memory="No memory yet"):
   prompt = prompt or PLANNER_PROMPT
   result = await claude_code_invoke(
       system="You are a research planner. Respond with only valid JSON.",
-      user=prompt.format(query=query, profile=format_resume_profile(profile)),
+      user=prompt.format(
+          query=query,
+          profile=format_resume_profile(profile),
+          memory=memory or "No memory yet",
+      ),
       schema=PlanResponse,
   )
   return [{"url": s.url, "goal": s.goal} for s in result.steps]
@@ -80,6 +89,8 @@ User Query: {query}
 
 Scraped Data: {scraped_data}
 
+{memory}
+
 Present results clearly with names, titles, companies, and any contact info found. 
 If you found relevant links that might have more info, mention them. 
 
@@ -87,6 +98,7 @@ PRIORITAZATION:
 - Rank people who share the user's skills, industry, or interests higher
 - Highlight shared backgrounds (same school, similar tech stack, overlapping experience)
 - Flag potential "warm paths" - alumni connections, shared technologies, common interests
+{memory_rules}
 
 Respond with ONLY valid JSON, no markdown:
 {{
@@ -105,7 +117,13 @@ Respond with ONLY valid JSON, no markdown:
 """
 
 
-async def synthesize_results(query, scraped_pages: list, resume_text="", prompt=None):
+SYNTH_MEMORY_RULES = """- Follow USER MEMORY: never include, recommend, or name in the summary anything it excludes.
+- Rank results that match its preferences and goals higher. Items marked (guess) are hints only:
+  they may nudge the order but must never remove a result.
+- Ignore RECENT QUERIES here; they are only for planning."""
+
+
+async def synthesize_results(query, scraped_pages: list, resume_text="", prompt=None, memory=""):
   prompt = prompt or SYNTHESIZER_PROMPT
   scraped_text = ""
   for page in scraped_pages:
@@ -116,7 +134,13 @@ async def synthesize_results(query, scraped_pages: list, resume_text="", prompt=
 
   result = await claude_code_invoke(
       system="You are a people-finding assistant. Respond with only valid JSON.",
-      user=prompt.format(query=query, scraped_data=scraped_text, resume=resume_text if resume_text else "No resume provided"),
+      user=prompt.format(
+          query=query,
+          scraped_data=scraped_text,
+          resume=resume_text if resume_text else "No resume provided",
+          memory=memory or "No memory yet",
+          memory_rules=SYNTH_MEMORY_RULES if memory and memory != "No memory yet" else "",
+      ),
       schema=SynthesisResponse,
   )
   return json.dumps(result.model_dump())
@@ -136,6 +160,9 @@ RULES:
 - Output 2-4 URLs maximum
 - The user query is the primary intent — never ignore it in favor of the profile
 - When a profile is provided, bias searches toward companies that fit the user's skills, industries, locations, and target roles while still answering the query
+- Follow USER MEMORY: never search for anything it excludes; use its preferences and goals to shape searches.
+  Items marked (guess) are hints only.
+- Use RECENT QUERIES only to understand follow-ups (e.g. "narrow it down to Seattle"); otherwise plan for the current query.
 
 Respond with ONLY valid JSON, no markdown:
 {{
@@ -147,7 +174,9 @@ Respond with ONLY valid JSON, no markdown:
 User query: {query}
 
 USER PROFILE (structured):
-{profile}"""
+{profile}
+
+{memory}"""
 
 
 COMPANY_SYNTHESIZER_PROMPT = """
@@ -161,10 +190,13 @@ IMPORTANT:
 - Only include REAL companies found in the data — do NOT make up companies
 - If nothing relevant was found, return an empty list and suggest better searches in "summary"
 - Rank companies that fit the user's skills and interests higher
+{memory_rules}
 
 User Query: {query}
 
 Scraped Data: {scraped_data}
+
+{memory}
 
 Respond with ONLY valid JSON, no markdown:
 {{

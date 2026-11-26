@@ -5,8 +5,8 @@ from browser_use.agent.service import Agent
 from browser_use.browser.browser import BrowserConfig
 
 
-async def find_leads(query, llm, resume_text="", resume_profile=None):
-    plan = await generate_plan(query, profile=resume_profile)
+async def find_leads(query, llm, resume_text="", resume_profile=None, memory=""):
+    plan = await generate_plan(query, profile=resume_profile, memory=memory)
     urls = [step["url"] for step in plan]
 
     # pages = await scrape_multiple(urls)
@@ -14,7 +14,7 @@ async def find_leads(query, llm, resume_text="", resume_profile=None):
 
     await _render_js_pages(pages, llm, "extract all people names, titles and contact information")
 
-    return await synthesize_results(query, pages, resume_text)
+    return await synthesize_results(query, pages, resume_text, memory=memory)
 
 
 async def _render_js_pages(pages, llm, instruction):
@@ -27,14 +27,14 @@ async def _render_js_pages(pages, llm, instruction):
         page.success = True
 
 
-async def find_companies(query, llm, resume_text="", resume_profile=None):
-    plan = await generate_plan(query, COMPANY_PLANNER_PROMPT, profile=resume_profile)
+async def find_companies(query, llm, resume_text="", resume_profile=None, memory=""):
+    plan = await generate_plan(query, COMPANY_PLANNER_PROMPT, profile=resume_profile, memory=memory)
     urls = [step["url"] for step in plan]
 
     pages = await scrape_multiple(urls)
     await _render_js_pages(pages, llm, "extract all company names, titles and contact information")
 
-    return await synthesize_results(query, pages, resume_text, COMPANY_SYNTHESIZER_PROMPT)
+    return await synthesize_results(query, pages, resume_text, COMPANY_SYNTHESIZER_PROMPT, memory=memory)
 
 
 browser = Browser(config=BrowserConfig(headless=True))

@@ -27,6 +27,23 @@ CLAUDE_CODE_TIMEOUT = float(os.getenv("CLAUDE_CODE_TIMEOUT", "180"))
 USE_CLI_FOR_AGENT = os.getenv("USE_CLI_FOR_AGENT", "true").lower() == "true"
 
 
+class LLMUnavailableError(RuntimeError):
+    """The LLM could not answer: not installed, timed out, usage limit, or an error reply.
+
+    `limit_reached` is True when the provider says the usage limit was hit,
+    so the API can tell the user to wait instead of retrying right away.
+    """
+
+    def __init__(self, message: str, limit_reached: bool = False):
+        super().__init__(message)
+        self.limit_reached = limit_reached
+
+
+def _looks_like_limit(text: str) -> bool:
+    text = (text or "").lower()
+    return "limit" in text and ("usage" in text or "rate" in text or "reached" in text)
+
+
 # ---------------------------------------------------------------------------
 # Pydantic models for structured output
 # ---------------------------------------------------------------------------
@@ -59,7 +76,7 @@ class SynthesisResponse(BaseModel):
 def _claude_code_command() -> str:
     command = shutil.which("claude.exe") or shutil.which("claude.cmd") or shutil.which("claude")
     if command is None:
-        raise RuntimeError("Claude Code is not installed or not on PATH (the 'claude' command).")
+        raise LLMUnavailableError("Claude Code is not installed or not on PATH (the 'claude' command).")
     return command
 
 
@@ -90,17 +107,22 @@ def _claude_code(system: str, user: str, schema: type[T] | None = None) -> T | s
                 encoding="utf-8", timeout=CLAUDE_CODE_TIMEOUT, env=env,
             )
         except subprocess.TimeoutExpired:
-            raise RuntimeError(
+            raise LLMUnavailableError(
                 f"Claude Code took longer than {CLAUDE_CODE_TIMEOUT:g}s; "
                 "raise CLAUDE_CODE_TIMEOUT."
             ) from None
 
     if result.returncode != 0 and not result.stdout.strip():
-        raise RuntimeError(f"Claude Code failed: {result.stderr.strip()}")
+        err = result.stderr.strip()
+        raise LLMUnavailableError(f"Claude Code failed: {err}", limit_reached=_looks_like_limit(err))
 
-    reply = json.loads(result.stdout)
+    try:
+        reply = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        raise LLMUnavailableError("Claude Code returned output that is not JSON.") from None
     if reply.get("is_error"):
-        raise RuntimeError(f"Claude Code failed: {reply.get('result') or reply.get('subtype')}")
+        detail = str(reply.get("result") or reply.get("subtype"))
+        raise LLMUnavailableError(f"Claude Code failed: {detail}", limit_reached=_looks_like_limit(detail))
 
     text = reply["result"].strip()
     if text.startswith("```"):

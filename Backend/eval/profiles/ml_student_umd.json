@@ -1,0 +1,15 @@
+{
+  "id": "ml_student_umd",
+  "description": "Synthetic test profile: UMD CS master's student focused on ML/LLMs, looking for ML engineering roles.",
+  "resume_profile": {
+    "summary": "Computer Science master's student at the University of Maryland, College Park, focused on machine learning and LLM applications.",
+    "target_roles": ["Machine Learning Engineer", "Software Engineer", "AI Engineer"],
+    "skills": ["Python", "PyTorch", "LLM fine-tuning", "RAG", "AWS", "C++", "FastAPI", "Vue.js"],
+    "industries": ["Artificial Intelligence", "Developer Tools"],
+    "companies": ["Amazon"],
+    "schools": ["University of Maryland, College Park"],
+    "locations": ["College Park, MD", "Washington, DC", "San Francisco Bay Area"],
+    "keywords": ["machine learning", "large language models", "agents", "retrieval", "deep learning"]
+  },
+  "resume_text": "Computer Science M.S. student, University of Maryland, College Park. Former software engineering intern at Amazon (AWS). Projects: fine-tuned LLMs with PyTorch, built a retrieval-augmented chatbot, built an AI agent that browses the web, FastAPI + Vue.js web app. Skills: Python, PyTorch, C++, AWS, FastAPI, Vue.js, RAG, LLM fine-tuning. Interested in Machine Learning Engineer and AI Engineer roles in the DC area or San Francisco Bay Area."
+}

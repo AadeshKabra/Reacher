@@ -1,0 +1,32 @@
+{
+  "_comment": "Draft eval set for review. mode: people -> pipeline.find_leads, companies -> pipeline.find_companies. quick: true marks the ~5-query dev subset. gold: real names that SHOULD appear (fill in for 3-5 queries to measure recall). profile: id of a file in eval/profiles, or null for no profile.",
+  "queries": [
+    {"id": "p01", "group": "people", "mode": "people", "profile": "ml_student_umd", "quick": true,  "gold": [], "query": "Find ML engineers at Nvidia"},
+    {"id": "p02", "group": "people", "mode": "people", "profile": "ml_student_umd", "quick": false, "gold": [], "query": "Who leads backend engineering at Stripe?"},
+    {"id": "p03", "group": "people", "mode": "people", "profile": "ml_student_umd", "quick": false, "gold": [], "query": "Engineering managers on the PyTorch team at Meta"},
+    {"id": "p04", "group": "people", "mode": "people", "profile": "ml_student_umd", "quick": true,  "gold": [], "query": "Researchers working on LLM inference at Hugging Face"},
+    {"id": "p05", "group": "people", "mode": "people", "profile": "ml_student_umd", "quick": false, "gold": [], "query": "Recruiters hiring new grad software engineers at Databricks"},
+    {"id": "p06", "group": "people", "mode": "people", "profile": "ml_student_umd", "quick": false, "gold": [], "query": "Speakers at PyTorch Conference 2025 who work on training efficiency"},
+    {"id": "p07", "group": "people", "mode": "people", "profile": "ml_student_umd", "quick": false, "gold": [], "query": "Maintainers of the vLLM project"},
+    {"id": "p08", "group": "people", "mode": "people", "profile": null,             "quick": false, "gold": [], "query": "Founders of AI developer tools startups in San Francisco"},
+    {"id": "p09", "group": "people", "mode": "people", "profile": "security_engineer_dc", "quick": true, "gold": [], "query": "Security engineers at Cloudflare who write on the Cloudflare blog"},
+    {"id": "p10", "group": "people", "mode": "people", "profile": "security_engineer_dc", "quick": false, "gold": [], "query": "Heads of security at fintech startups in New York"},
+    {"id": "p11", "group": "people", "mode": "people", "profile": "security_engineer_dc", "quick": false, "gold": [], "query": "Detection engineering leads at CrowdStrike"},
+    {"id": "p12", "group": "people", "mode": "people", "profile": null,             "quick": false, "gold": [], "query": "Product managers working on Kubernetes at Google"},
+
+    {"id": "c01", "group": "companies", "mode": "companies", "profile": "security_engineer_dc", "quick": true, "gold": [], "query": "Cybersecurity startups hiring in DC"},
+    {"id": "c02", "group": "companies", "mode": "companies", "profile": "ml_student_umd", "quick": false, "gold": [], "query": "Early-stage AI startups hiring ML engineers in the Bay Area"},
+    {"id": "c03", "group": "companies", "mode": "companies", "profile": "ml_student_umd", "quick": false, "gold": [], "query": "Y Combinator companies building LLM evaluation tools"},
+    {"id": "c04", "group": "companies", "mode": "companies", "profile": "security_engineer_dc", "quick": false, "gold": [], "query": "Defense tech startups in Northern Virginia"},
+    {"id": "c05", "group": "companies", "mode": "companies", "profile": null,             "quick": false, "gold": [], "query": "Climate tech startups hiring software engineers"},
+    {"id": "c06", "group": "companies", "mode": "companies", "profile": "ml_student_umd", "quick": false, "gold": [], "query": "Startups that sponsor visas for new grad engineers"},
+    {"id": "c07", "group": "companies", "mode": "companies", "profile": "security_engineer_dc", "quick": false, "gold": [], "query": "Series A cloud security companies"},
+
+    {"id": "a01", "group": "alumni", "mode": "people", "profile": "ml_student_umd", "quick": true,  "gold": [], "query": "SWE engineers from UMD College Park at Meta"},
+    {"id": "a02", "group": "alumni", "mode": "people", "profile": "ml_student_umd", "quick": false, "gold": [], "query": "University of Maryland alumni working in machine learning at Google"},
+    {"id": "a03", "group": "alumni", "mode": "people", "profile": "ml_student_umd", "quick": false, "gold": [], "query": "UMD alumni who founded startups"},
+    {"id": "a04", "group": "alumni", "mode": "people", "profile": "security_engineer_dc", "quick": false, "gold": [], "query": "Virginia Tech alumni working in security at Amazon"},
+    {"id": "a05", "group": "alumni", "mode": "people", "profile": "ml_student_umd", "quick": false, "gold": [], "query": "Former Amazon engineers now working at AI startups"},
+    {"id": "a06", "group": "alumni", "mode": "people", "profile": "ml_student_umd", "quick": false, "gold": [], "query": "People who did their PhD at UMD and now work at OpenAI"}
+  ]
+}

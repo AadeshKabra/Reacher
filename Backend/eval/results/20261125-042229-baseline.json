@@ -1,0 +1,719 @@
+{
+  "meta": {
+    "label": "baseline",
+    "started_at": "2026-11-25T04:22:29.505956+00:00",
+    "finished_at": "2026-11-25T04:25:09.208400+00:00",
+    "git": "07da2b7+dirty",
+    "args": {
+      "quick": true,
+      "ids": null,
+      "group": null,
+      "repeat": 1,
+      "no_judge": false,
+      "profiles": "both",
+      "delay": 5.0,
+      "stop_after_blocked": 3,
+      "label": "baseline",
+      "compare": null,
+      "rejudge": null
+    },
+    "stopped_early": "stopped after 3 fully blocked queries in a row; the search engine is rate-limiting. Wait a while and re-run.",
+    "queries_planned": 10
+  },
+  "summary": {
+    "overall": {
+      "queries": 5,
+      "errors": 0,
+      "zero_lead_queries": 3,
+      "leads_total": 12,
+      "leads_per_query": 2.4,
+      "grounded_rate": 1.0,
+      "grounded_exact_rate": 1.0,
+      "unverifiable_leads": 3,
+      "source_fetched_by_pipeline_rate": 0.0,
+      "duplicate_rate": 0.0,
+      "emails_given": 0,
+      "emails_on_page_rate": null,
+      "verifiable_source_rate": 0.667,
+      "source_types": {
+        "blog": 8,
+        "linkedin": 2,
+        "data_broker": 2
+      },
+      "request_match_mean": 1.5,
+      "user_fit_mean": 0.75,
+      "fabricated_leads": 0,
+      "useful_rate": 0.417,
+      "useful_leads_per_query": 1.0,
+      "verified_useful_per_query": 0.6,
+      "order_quality_mean": 0.987,
+      "fully_blocked_queries": 3,
+      "latency_mean_s": 23.7,
+      "latency_max_s": 36.0,
+      "pipeline_pages_fetched": 28,
+      "pipeline_pages_blocked_rate": 0.714,
+      "pipeline_pages_failed_rate": 0.0,
+      "gold_recall_mean": null
+    },
+    "by_group": {
+      "people": {
+        "queries": 5,
+        "errors": 0,
+        "zero_lead_queries": 3,
+        "leads_total": 12,
+        "leads_per_query": 2.4,
+        "grounded_rate": 1.0,
+        "grounded_exact_rate": 1.0,
+        "unverifiable_leads": 3,
+        "source_fetched_by_pipeline_rate": 0.0,
+        "duplicate_rate": 0.0,
+        "emails_given": 0,
+        "emails_on_page_rate": null,
+        "verifiable_source_rate": 0.667,
+        "source_types": {
+          "blog": 8,
+          "linkedin": 2,
+          "data_broker": 2
+        },
+        "request_match_mean": 1.5,
+        "user_fit_mean": 0.75,
+        "fabricated_leads": 0,
+        "useful_rate": 0.417,
+        "useful_leads_per_query": 1.0,
+        "verified_useful_per_query": 0.6,
+        "order_quality_mean": 0.987,
+        "fully_blocked_queries": 3,
+        "latency_mean_s": 23.7,
+        "latency_max_s": 36.0,
+        "pipeline_pages_fetched": 28,
+        "pipeline_pages_blocked_rate": 0.714,
+        "pipeline_pages_failed_rate": 0.0,
+        "gold_recall_mean": null
+      }
+    },
+    "by_variant": {
+      "no_profile": {
+        "queries": 2,
+        "errors": 0,
+        "zero_lead_queries": 1,
+        "leads_total": 4,
+        "leads_per_query": 2.0,
+        "grounded_rate": 1.0,
+        "grounded_exact_rate": 1.0,
+        "unverifiable_leads": 2,
+        "source_fetched_by_pipeline_rate": 0.0,
+        "duplicate_rate": 0.0,
+        "emails_given": 0,
+        "emails_on_page_rate": null,
+        "verifiable_source_rate": 0.5,
+        "source_types": {
+          "data_broker": 2,
+          "blog": 2
+        },
+        "request_match_mean": 2.5,
+        "user_fit_mean": 1.0,
+        "fabricated_leads": 0,
+        "useful_rate": 0.75,
+        "useful_leads_per_query": 1.5,
+        "verified_useful_per_query": 0.5,
+        "order_quality_mean": 1.0,
+        "fully_blocked_queries": 1,
+        "latency_mean_s": 21.5,
+        "latency_max_s": 24.4,
+        "pipeline_pages_fetched": 12,
+        "pipeline_pages_blocked_rate": 0.667,
+        "pipeline_pages_failed_rate": 0.0,
+        "gold_recall_mean": null
+      },
+      "with_profile": {
+        "queries": 3,
+        "errors": 0,
+        "zero_lead_queries": 2,
+        "leads_total": 8,
+        "leads_per_query": 2.67,
+        "grounded_rate": 1.0,
+        "grounded_exact_rate": 1.0,
+        "unverifiable_leads": 1,
+        "source_fetched_by_pipeline_rate": 0.0,
+        "duplicate_rate": 0.0,
+        "emails_given": 0,
+        "emails_on_page_rate": null,
+        "verifiable_source_rate": 0.75,
+        "source_types": {
+          "blog": 6,
+          "linkedin": 2
+        },
+        "request_match_mean": 1.0,
+        "user_fit_mean": 0.625,
+        "fabricated_leads": 0,
+        "useful_rate": 0.25,
+        "useful_leads_per_query": 0.67,
+        "verified_useful_per_query": 0.67,
+        "order_quality_mean": 0.974,
+        "fully_blocked_queries": 2,
+        "latency_mean_s": 25.1,
+        "latency_max_s": 36.0,
+        "pipeline_pages_fetched": 16,
+        "pipeline_pages_blocked_rate": 0.75,
+        "pipeline_pages_failed_rate": 0.0,
+        "gold_recall_mean": null
+      }
+    },
+    "personalization": {
+      "pairs": 1,
+      "skipped_blocked": 1,
+      "user_fit_delta_mean": -0.375,
+      "useful_leads_delta_mean": -1,
+      "profile_better": 0,
+      "profile_worse": 1,
+      "no_difference": 0,
+      "per_query": [
+        {
+          "id": "p01",
+          "run": 1,
+          "fit_with": 0.625,
+          "fit_without": 1,
+          "fit_delta": -0.375,
+          "useful_with": 2,
+          "useful_without": 3
+        }
+      ]
+    }
+  },
+  "queries": [
+    {
+      "id": "p01",
+      "group": "people",
+      "mode": "people",
+      "profile": "ml_student_umd",
+      "variant": "with_profile",
+      "query": "Find ML engineers at Nvidia",
+      "gold": [],
+      "error": null,
+      "summary_text": "Found 8 real individuals at NVIDIA from blog author pages and search results, ranging from ML engineers and engineering managers to a senior recruiter. Top matches are Peter St John (ML Engineer, BioNeMo), Avinash Ahuja (former ML Engineer, fellow Big Ten CS grad), and Mitesh Patel (LLM/data science workflows) due to alignment with your PyTorch, LLM, and ML engineering background. No direct email addresses were found in the scraped data. A notable UMD–NVIDIA connection exists via the Music Flamingo research collaboration, which could serve as a warm introduction path.",
+      "leads": [
+        {
+          "name": "Peter St John",
+          "title": "Machine Learning Engineer, BioNeMo Team",
+          "company": "NVIDIA",
+          "email": null,
+          "source_url": "https://developer.nvidia.com/blog/author/pstjohn/",
+          "relevance": "ML Engineer at NVIDIA working on accelerating digital biology workflows with deep learning — directly relevant to your ML Engineer interest. His work on protein/genomics models likely involves PyTorch, aligning with your fine-tuning experience.",
+          "grounding": {
+            "page_status": "ok",
+            "source_fetched_by_pipeline": false,
+            "name_match": "exact",
+            "email_on_page": null
+          },
+          "judge": {
+            "fabricated": false,
+            "request_match": 3,
+            "user_fit": 1,
+            "reason": "ML Engineer at NVIDIA, exact match. Some overlap via ML/PyTorch skills.",
+            "useful": true
+          }
+        },
+        {
+          "name": "Chester Chen",
+          "title": "Senior Manager, Federated Learning Engineering",
+          "company": "NVIDIA",
+          "email": null,
+          "source_url": "https://developer.nvidia.com/blog/author/chesterc/",
+          "relevance": "Leads the federated learning engineering team at NVIDIA with 20+ years experience in ML systems. His background in data science engineering and ML infrastructure aligns with your ML/AI engineering interests.",
+          "grounding": {
+            "page_status": "ok",
+            "source_fetched_by_pipeline": false,
+            "name_match": "exact",
+            "email_on_page": null
+          },
+          "judge": {
+            "fabricated": false,
+            "request_match": 1,
+            "user_fit": 1,
+            "reason": "Senior Manager, not an IC ML engineer. ML-adjacent field.",
+            "useful": false
+          }
+        },
+        {
+          "name": "Avinash Ahuja",
+          "title": "Author / ML Professional (former Data Scientist & ML Engineer)",
+          "company": "NVIDIA",
+          "email": null,
+          "source_url": "https://blogs.nvidia.com/blog/author/avahuja/",
+          "relevance": "Previously a data scientist and ML engineer building search and recommender systems at LinkedIn. Holds master's in CS from UIUC — fellow Big Ten CS grad student, potential warm connection. His search/recommender background connects to your RAG and LLM experience.",
+          "grounding": {
+            "page_status": "ok",
+            "source_fetched_by_pipeline": false,
+            "name_match": "exact",
+            "email_on_page": null
+          },
+          "judge": {
+            "fabricated": false,
+            "request_match": 2,
+            "user_fit": 1,
+            "reason": "Former ML Engineer at NVIDIA; may no longer be in role but closely related function.",
+            "useful": true
+          }
+        },
+        {
+          "name": "Rishabh Chadha",
+          "title": "Technical Marketing Engineer (Deep Learning & Robotics)",
+          "company": "NVIDIA",
+          "email": null,
+          "source_url": "https://developer.nvidia.com/blog/author/rchadha/",
+          "relevance": "Focuses on integrating deep learning and robotics frameworks at NVIDIA — relevant to your deep learning and PyTorch skills.",
+          "grounding": {
+            "page_status": "ok",
+            "source_fetched_by_pipeline": false,
+            "name_match": "exact",
+            "email_on_page": null
+          },
+          "judge": {
+            "fabricated": false,
+            "request_match": 1,
+            "user_fit": 1,
+            "reason": "Technical Marketing Engineer, not an ML engineer role. Deep learning topic overlap.",
+            "useful": false
+          }
+        },
+        {
+          "name": "Mitesh Patel",
+          "title": "Developer Advocate Manager",
+          "company": "NVIDIA",
+          "email": null,
+          "source_url": "https://developer.nvidia.com/blog/author/miteshp/",
+          "relevance": "Creates workflows showcasing GPU acceleration for LLMs, SLMs, and data science — directly relevant to your LLM fine-tuning and PyTorch experience. Former senior research scientist at Fuji Xerox Palo Alto Lab.",
+          "grounding": {
+            "page_status": "ok",
+            "source_fetched_by_pipeline": false,
+            "name_match": "exact",
+            "email_on_page": null
+          },
+          "judge": {
+            "fabricated": false,
+            "request_match": 0,
+            "user_fit": 0,
+            "reason": "Developer Advocate Manager, different function entirely.",
+            "useful": false
+          }
+        },
+        {
+          "name": "Bryan Catanzaro",
+          "title": "VP of Applied Deep Learning Research",
+          "company": "NVIDIA",
+          "email": null,
+          "source_url": "https://www.linkedin.com/in/bryancatanzaro",
+          "relevance": "Senior deep learning leader at NVIDIA, UC Berkeley alum. His applied deep learning research group is a key hiring team for ML engineers. High-value connection for someone targeting ML Engineer roles at NVIDIA.",
+          "grounding": {
+            "page_status": "ok",
+            "source_fetched_by_pipeline": false,
+            "name_match": "exact",
+            "email_on_page": null
+          },
+          "judge": {
+            "fabricated": false,
+            "request_match": 1,
+            "user_fit": 1,
+            "reason": "VP-level executive in deep learning research, not an IC ML engineer. ML overlap exists.",
+            "useful": false
+          }
+        },
+        {
+          "name": "Borhan Fathi",
+          "title": "Senior Manager, Technical Product Management (Automotive & Robotics)",
+          "company": "NVIDIA",
+          "email": null,
+          "source_url": "https://developer.nvidia.com/blog/author/bmoghadam/",
+          "relevance": "Leads sensor and platform strategy bridging silicon, software, and multimodal AI. Less directly aligned with your LLM focus but still within NVIDIA's AI ecosystem.",
+          "grounding": {
+            "page_status": "ok",
+            "source_fetched_by_pipeline": false,
+            "name_match": "exact",
+            "email_on_page": null
+          },
+          "judge": {
+            "fabricated": false,
+            "request_match": 0,
+            "user_fit": 0,
+            "reason": "Senior Manager in Automotive/Robotics product management, not ML engineering.",
+            "useful": false
+          }
+        },
+        {
+          "name": "Jie (Jane) Ma",
+          "title": "Senior Recruiter",
+          "company": "NVIDIA",
+          "email": null,
+          "source_url": "https://cn.linkedin.com/in/jie-jane-ma-1129a664",
+          "relevance": "NVIDIA recruiter — a direct hiring contact. Useful for expressing interest in ML Engineer roles at NVIDIA.",
+          "grounding": {
+            "page_status": "blocked",
+            "source_fetched_by_pipeline": false,
+            "name_match": "unknown",
+            "email_on_page": null
+          },
+          "judge": {
+            "fabricated": false,
+            "request_match": 0,
+            "user_fit": 0,
+            "reason": "Senior Recruiter, not an ML engineer.",
+            "useful": false
+          }
+        }
+      ],
+      "latency_s": 36.0,
+      "pages": {
+        "fetched": 8,
+        "ok": 4,
+        "blocked": 4,
+        "failed": 0,
+        "needed_js": 0,
+        "urls": [
+          "https://duckduckgo.com/html/?q=UMD+%22University+of+Maryland%22+alumni+Nvidia+machine+learning+engineer",
+          "https://duckduckgo.com/html/?q=site%3Anvidia.com+machine+learning+engineer+team+blog+author",
+          "https://duckduckgo.com/html/?q=Nvidia+ML+engineer+speaker+conference+2026+name+email",
+          "https://duckduckgo.com/html/?q=Nvidia+deep+learning+engineer+PyTorch+%22%40nvidia.com%22",
+          "https://duckduckgo.com//duckduckgo.com/l/?uddg=https%3A%2F%2Feng.umd.edu%2Falumni&rut=fb5163c3fde85156de4ade0d3cc4d0f9bfe740eb903aa5e074db845b81ebdd1c",
+          "https://duckduckgo.com//duckduckgo.com/l/?uddg=https%3A%2F%2Fdeveloper.nvidia.com%2Fblog%2Fauthor%2Fpstjohn%2F&rut=7f0d2857c0d9f8e6620e44098da6879caa8729edd3062988947b0d119d2a5814",
+          "https://duckduckgo.com//duckduckgo.com/l/?uddg=https%3A%2F%2Fdeveloper.nvidia.com%2Fblog%2Fauthor%2Fbmoghadam%2F&rut=b2e0064b171ba1aab3cf4d880749909076bea6f08c2cd5d3680142bf16a30ce2",
+          "https://duckduckgo.com//duckduckgo.com/l/?uddg=https%3A%2F%2Fdeveloper.nvidia.com%2Fblog%2Fauthor%2Fchesterc%2F&rut=74b48c7fd14555ff7d7d8309b68e2f0479f27e0f5425153f24d7bb4dd83a4b53"
+        ]
+      },
+      "metrics": {
+        "leads": 8,
+        "duplicates": 0,
+        "checkable_leads": 7,
+        "grounded_exact": 7,
+        "grounded_partial": 0,
+        "source_fetched_by_pipeline": 0,
+        "emails_given": 0,
+        "emails_on_page": 0,
+        "judged_leads": 8,
+        "request_match_scores": [
+          3,
+          1,
+          2,
+          1,
+          0,
+          1,
+          0,
+          0
+        ],
+        "user_fit_scores": [
+          1,
+          1,
+          1,
+          1,
+          0,
+          1,
+          0,
+          0
+        ],
+        "fabricated": 0,
+        "useful_leads": 2,
+        "verified_useful_leads": 2,
+        "ndcg": 0.974,
+        "source_types": [
+          "blog",
+          "blog",
+          "blog",
+          "blog",
+          "blog",
+          "linkedin",
+          "blog",
+          "linkedin"
+        ],
+        "gold_recall": null
+      },
+      "run": 1
+    },
+    {
+      "id": "p01",
+      "group": "people",
+      "mode": "people",
+      "profile": "ml_student_umd",
+      "variant": "no_profile",
+      "query": "Find ML engineers at Nvidia",
+      "gold": [],
+      "error": null,
+      "summary_text": "Found 4 ML engineers/leaders at NVIDIA from public web sources: two ML engineers (Abhishek Mishra, Nigel Nelson), one senior/staff ML engineer (Nick Gupta), and one VP of Applied Deep Learning Research (Bryan Catanzaro). No direct email addresses were publicly available. Additional leads may be found via NVIDIA's research people page and GTC speaker listings.",
+      "leads": [
+        {
+          "name": "Abhishek Mishra",
+          "title": "Machine Learning Engineer",
+          "company": "NVIDIA",
+          "email": null,
+          "source_url": "https://rocketreach.co/abhishek-mishra-email_2834973",
+          "relevance": "ML Engineer at NVIDIA based in California. Previously worked at Box, Google, Samsung SDS Research America, and The Data Incubator. Directly matches the query for ML engineers at Nvidia.",
+          "grounding": {
+            "page_status": "blocked",
+            "source_fetched_by_pipeline": false,
+            "name_match": "unknown",
+            "email_on_page": null
+          },
+          "judge": {
+            "fabricated": false,
+            "request_match": 3,
+            "user_fit": 1,
+            "reason": "ML Engineer at NVIDIA, exactly matches request. Shares ML/deep learning field with user but no direct school/company overlap.",
+            "useful": true
+          }
+        },
+        {
+          "name": "Nick Gupta",
+          "title": "Senior and Staff Machine Learning Engineer",
+          "company": "NVIDIA",
+          "email": null,
+          "source_url": "https://rocketreach.co/nick-gupta-email_19480498",
+          "relevance": "Senior/Staff ML Engineer at NVIDIA based in Boston, MA. Previously at Amazon, American Express, Redwood Investment Management, and State Farm. Senior-level ML engineer directly matching the query.",
+          "grounding": {
+            "page_status": "blocked",
+            "source_fetched_by_pipeline": false,
+            "name_match": "unknown",
+            "email_on_page": null
+          },
+          "judge": {
+            "fabricated": false,
+            "request_match": 3,
+            "user_fit": 1,
+            "reason": "Senior/Staff ML Engineer at NVIDIA, exact match. Same broad ML field but no direct warm path.",
+            "useful": true
+          }
+        },
+        {
+          "name": "Nigel Nelson",
+          "title": "Machine Learning Engineer",
+          "company": "NVIDIA",
+          "email": null,
+          "source_url": "https://developer.nvidia.com/blog/author/nigeln/",
+          "relevance": "ML Engineer at NVIDIA focusing on AI in healthcare. Research interests include vision-language models, vision-language-action models, and visuomotor robotics policies. Holds a BS in Computer Science from Milwaukee School of Engineering. Active blog author on NVIDIA's technical blog.",
+          "grounding": {
+            "page_status": "ok",
+            "source_fetched_by_pipeline": false,
+            "name_match": "exact",
+            "email_on_page": null
+          },
+          "judge": {
+            "fabricated": false,
+            "request_match": 3,
+            "user_fit": 1,
+            "reason": "ML Engineer at NVIDIA, exact match. Same ML domain but no shared school or employer.",
+            "useful": true
+          }
+        },
+        {
+          "name": "Bryan Catanzaro",
+          "title": "VP of Applied Deep Learning Research",
+          "company": "NVIDIA",
+          "email": null,
+          "source_url": "https://blogs.nvidia.com/blog/author/bcatanzaro/",
+          "relevance": "VP of Applied Deep Learning Research at NVIDIA leading a team working on deep learning across domains including video games and chip design. PhD from UC Berkeley in parallel computing and ML. Created the widely used cuDNN library. Senior leadership in ML at NVIDIA.",
+          "grounding": {
+            "page_status": "ok",
+            "source_fetched_by_pipeline": false,
+            "name_match": "exact",
+            "email_on_page": null
+          },
+          "judge": {
+            "fabricated": false,
+            "request_match": 1,
+            "user_fit": 1,
+            "reason": "VP-level executive at NVIDIA, not an IC ML engineer as requested. Right company but wrong seniority/function for the request.",
+            "useful": false
+          }
+        }
+      ],
+      "latency_s": 24.4,
+      "pages": {
+        "fetched": 8,
+        "ok": 4,
+        "blocked": 4,
+        "failed": 0,
+        "needed_js": 0,
+        "urls": [
+          "https://duckduckgo.com/html/?q=nvidia+machine+learning+engineer+name+email+contact",
+          "https://duckduckgo.com/html/?q=site%3Anvidia.com+machine+learning+engineer+team",
+          "https://duckduckgo.com/html/?q=nvidia+ML+engineer+speaker+conference+2026",
+          "https://duckduckgo.com/html/?q=nvidia+machine+learning+blog+author+research",
+          "https://duckduckgo.com//duckduckgo.com/l/?uddg=https%3A%2F%2Fwww.nvidia.com%2Fen%2Dus%2Fabout%2Dnvidia%2Fcareers%2F&rut=c721bb12348597d7074f9e68f2241f3765f8d739886651d92e67ca4fb9be47a7",
+          "https://duckduckgo.com//duckduckgo.com/l/?uddg=https%3A%2F%2Frocketreach.co%2Fabhishek%2Dmishra%2Demail_2834973&rut=59249a3150802bf23224052c8d3e77bc248ead78c4a2d9d1604fe53abd57feec",
+          "https://duckduckgo.com//duckduckgo.com/l/?uddg=https%3A%2F%2Frocketreach.co%2Fnick%2Dgupta%2Demail_19480498&rut=284d571b163c711dd3ff2645d878d290a6da537d52dfd18f6da9edf83c1e50e2",
+          "https://duckduckgo.com//duckduckgo.com/l/?uddg=https%3A%2F%2Fjobs.nvidia.com%2Fcareers%2Fjob%2F893398215022&rut=a5f3190053ae271f7ad853833cb2b5fc80ab2438ef806d230327b31c247f78bb"
+        ]
+      },
+      "metrics": {
+        "leads": 4,
+        "duplicates": 0,
+        "checkable_leads": 2,
+        "grounded_exact": 2,
+        "grounded_partial": 0,
+        "source_fetched_by_pipeline": 0,
+        "emails_given": 0,
+        "emails_on_page": 0,
+        "judged_leads": 4,
+        "request_match_scores": [
+          3,
+          3,
+          3,
+          1
+        ],
+        "user_fit_scores": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "fabricated": 0,
+        "useful_leads": 3,
+        "verified_useful_leads": 1,
+        "ndcg": 1.0,
+        "source_types": [
+          "data_broker",
+          "data_broker",
+          "blog",
+          "blog"
+        ],
+        "gold_recall": null
+      },
+      "run": 1
+    },
+    {
+      "id": "p04",
+      "group": "people",
+      "mode": "people",
+      "profile": "ml_student_umd",
+      "variant": "with_profile",
+      "query": "Researchers working on LLM inference at Hugging Face",
+      "gold": [],
+      "error": null,
+      "summary_text": "All DuckDuckGo queries were blocked by CAPTCHA, so no real person data could be extracted. Alternative direct-source strategies have been provided.",
+      "leads": [],
+      "latency_s": 18.9,
+      "pages": {
+        "fetched": 4,
+        "ok": 0,
+        "blocked": 4,
+        "failed": 0,
+        "needed_js": 0,
+        "urls": [
+          "https://duckduckgo.com/html/?q=Hugging+Face+LLM+inference+researcher+name+email",
+          "https://duckduckgo.com/html/?q=site%3Ahuggingface.co+blog+inference+optimization+author",
+          "https://duckduckgo.com/html/?q=Hugging+Face+inference+engineer+speaker+conference+2026",
+          "https://duckduckgo.com/html/?q=University+of+Maryland+alumni+Hugging+Face+machine+learning"
+        ]
+      },
+      "metrics": {
+        "leads": 0,
+        "duplicates": 0,
+        "checkable_leads": 0,
+        "grounded_exact": 0,
+        "grounded_partial": 0,
+        "source_fetched_by_pipeline": 0,
+        "emails_given": 0,
+        "emails_on_page": 0,
+        "judged_leads": 0,
+        "request_match_scores": [],
+        "user_fit_scores": [],
+        "fabricated": 0,
+        "useful_leads": 0,
+        "verified_useful_leads": 0,
+        "ndcg": null,
+        "source_types": [],
+        "gold_recall": null
+      },
+      "run": 1
+    },
+    {
+      "id": "p04",
+      "group": "people",
+      "mode": "people",
+      "profile": "ml_student_umd",
+      "variant": "no_profile",
+      "query": "Researchers working on LLM inference at Hugging Face",
+      "gold": [],
+      "error": null,
+      "summary_text": "No specific individuals were found because all DuckDuckGo searches were blocked by CAPTCHA. Alternative search strategies have been suggested.",
+      "leads": [],
+      "latency_s": 18.7,
+      "pages": {
+        "fetched": 4,
+        "ok": 0,
+        "blocked": 4,
+        "failed": 0,
+        "needed_js": 0,
+        "urls": [
+          "https://duckduckgo.com/html/?q=site%3Ahuggingface.co+LLM+inference+team+researcher+blog+author",
+          "https://duckduckgo.com/html/?q=Hugging+Face+LLM+inference+researcher+engineer+name+email",
+          "https://duckduckgo.com/html/?q=%22Hugging+Face%22+%22inference%22+%22large+language+model%22+speaker+conference+2025+2026",
+          "https://duckduckgo.com/html/?q=site%3Ahuggingface.co+%22text-generation-inference%22+author+contributor"
+        ]
+      },
+      "metrics": {
+        "leads": 0,
+        "duplicates": 0,
+        "checkable_leads": 0,
+        "grounded_exact": 0,
+        "grounded_partial": 0,
+        "source_fetched_by_pipeline": 0,
+        "emails_given": 0,
+        "emails_on_page": 0,
+        "judged_leads": 0,
+        "request_match_scores": [],
+        "user_fit_scores": [],
+        "fabricated": 0,
+        "useful_leads": 0,
+        "verified_useful_leads": 0,
+        "ndcg": null,
+        "source_types": [],
+        "gold_recall": null
+      },
+      "run": 1
+    },
+    {
+      "id": "p09",
+      "group": "people",
+      "mode": "people",
+      "profile": "security_engineer_dc",
+      "variant": "with_profile",
+      "query": "Security engineers at Cloudflare who write on the Cloudflare blog",
+      "gold": [],
+      "error": null,
+      "summary_text": "No specific individuals were found because all DuckDuckGo searches were blocked by CAPTCHA. The scraped data contained no usable content about Cloudflare security engineers or blog authors.",
+      "leads": [],
+      "latency_s": 20.4,
+      "pages": {
+        "fetched": 4,
+        "ok": 0,
+        "blocked": 4,
+        "failed": 0,
+        "needed_js": 0,
+        "urls": [
+          "https://duckduckgo.com/html/?q=site%3Ablog.cloudflare.com+security+engineer+author",
+          "https://duckduckgo.com/html/?q=Cloudflare+security+engineer+blog+author+name+%22zero+trust%22",
+          "https://duckduckgo.com/html/?q=Virginia+Tech+alumni+Cloudflare+security+engineer",
+          "https://duckduckgo.com/html/?q=Cloudflare+security+team+engineer+speaker+conference+2025+2026"
+        ]
+      },
+      "metrics": {
+        "leads": 0,
+        "duplicates": 0,
+        "checkable_leads": 0,
+        "grounded_exact": 0,
+        "grounded_partial": 0,
+        "source_fetched_by_pipeline": 0,
+        "emails_given": 0,
+        "emails_on_page": 0,
+        "judged_leads": 0,
+        "request_match_scores": [],
+        "user_fit_scores": [],
+        "fabricated": 0,
+        "useful_leads": 0,
+        "verified_useful_leads": 0,
+        "ndcg": null,
+        "source_types": [],
+        "gold_recall": null
+      },
+      "run": 1
+    }
+  ]
+}

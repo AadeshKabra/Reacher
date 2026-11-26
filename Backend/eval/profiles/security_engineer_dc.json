@@ -1,0 +1,15 @@
+{
+  "id": "security_engineer_dc",
+  "description": "Synthetic test profile: backend/security engineer in the DC area, looking at security startups.",
+  "resume_profile": {
+    "summary": "Backend engineer with three years of experience in cloud security and distributed systems, based in the Washington, DC area.",
+    "target_roles": ["Security Engineer", "Backend Engineer", "Cloud Security Engineer"],
+    "skills": ["Go", "Python", "Kubernetes", "AWS", "Threat modeling", "Terraform", "PostgreSQL", "Incident response"],
+    "industries": ["Cybersecurity", "Cloud infrastructure", "Defense technology"],
+    "companies": ["Capital One", "Booz Allen Hamilton"],
+    "schools": ["Virginia Tech"],
+    "locations": ["Washington, DC", "Arlington, VA"],
+    "keywords": ["cloud security", "zero trust", "SOC", "detection engineering", "startups"]
+  },
+  "resume_text": "Backend engineer, 3 years. Capital One (cloud security platform, Go, AWS, Kubernetes) and Booz Allen Hamilton (detection engineering, Python). B.S. Computer Science, Virginia Tech. Skills: Go, Python, Kubernetes, AWS, Terraform, PostgreSQL, threat modeling, incident response. Looking for security or backend roles at early-stage cybersecurity startups in Washington, DC or Arlington, VA."
+}
