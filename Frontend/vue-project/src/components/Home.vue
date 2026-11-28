@@ -188,7 +188,15 @@
                                 <article v-for="(lead, j) in msg.leads" :key="j" class="lead-card"
                                     :class="{ open: expandedLead === leadKey(i, j) }">
                                     <header class="lead-head">
-                                        <div class="lead-avatar" aria-hidden="true">{{ leadInitials(lead.name) }}</div>
+                                        <div class="lead-avatar" :class="{ 'has-logo': logoShown(lead) }"
+                                            aria-hidden="true">
+                                            <img v-if="logoUrl(lead) && !logoFailed.has(lead.domain)"
+                                                v-show="logoShown(lead)" :src="logoUrl(lead)" alt="" width="28"
+                                                height="28" loading="lazy" referrerpolicy="no-referrer"
+                                                @load="onLogoLoad(lead.domain, $event)"
+                                                @error="markLogoFailed(lead.domain)" />
+                                            <template v-if="!logoShown(lead)">{{ leadInitials(lead.name) }}</template>
+                                        </div>
                                         <div class="lead-id">
                                             <h3 class="lead-name" :title="lead.name || 'Unnamed contact'">{{ lead.name
                                                 || 'Unnamed contact' }}</h3>
@@ -377,6 +385,35 @@ function leadInitials(name) {
     const parts = (name || '').trim().split(/\s+/).filter(Boolean);
     if (!parts.length) return '?';
     return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+}
+
+// --- Company logos ---
+// The browser loads the favicon straight from Google's favicon service; nothing is stored.
+// Google answers an unknown domain with a tiny 16px globe, so anything under 32px counts as no logo.
+const DOMAIN_RE = /^(?=.{4,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}$/;
+const logoLoaded = ref(new Set());
+const logoFailed = ref(new Set());
+
+function logoUrl(lead) {
+    const d = typeof lead?.domain === 'string' ? lead.domain.trim().toLowerCase() : '';
+    if (!DOMAIN_RE.test(d)) return '';
+    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(d)}&sz=128`;
+}
+
+function logoShown(lead) {
+    return !!logoUrl(lead) && logoLoaded.value.has(lead.domain) && !logoFailed.value.has(lead.domain);
+}
+
+function onLogoLoad(domain, event) {
+    if (event.target.naturalWidth < 32) {
+        markLogoFailed(domain);
+        return;
+    }
+    logoLoaded.value = new Set(logoLoaded.value).add(domain);
+}
+
+function markLogoFailed(domain) {
+    logoFailed.value = new Set(logoFailed.value).add(domain);
 }
 
 function hasAllowedExtension(filename) {
@@ -870,8 +907,8 @@ async function loadChat(sessionId) {
     --green-light: #DCEDF5;
     --user-bubble: #E3E7EE;
     --user-bubble-border: #D3D8E1;
-    --serif: 'Outfit', -apple-system, sans-serif;
-    --sans: 'Karla', -apple-system, sans-serif;
+    --serif: 'Sora', -apple-system, sans-serif;
+    --sans: 'Sora', -apple-system, sans-serif;
     --shadow-sm: 0 1px 2px rgba(30, 35, 45, 0.06), 0 1px 3px rgba(30, 35, 45, 0.04);
     --shadow-md: 0 4px 12px rgba(30, 35, 45, 0.09), 0 1px 4px rgba(30, 35, 45, 0.05);
     --shadow-lg: 0 14px 36px rgba(30, 35, 45, 0.12), 0 4px 12px rgba(30, 35, 45, 0.06);
@@ -914,9 +951,8 @@ body {
     overflow-x: hidden;
 }
 
-/* Light theme's Karla/Outfit have a smaller lowercase (x-height 0.48 of the font size) than dark theme's
-   Sora (0.54), so the same font-size looked ~12% smaller in light mode. Pinning every font to Sora's
-   x-height makes text the same visual size in both themes and leaves Sora itself unchanged.
+/* Both themes use Sora (x-height 0.54). Pinning every font to that x-height keeps fallback fonts
+   the same visual size while Sora loads, and leaves Sora itself unchanged.
    Set on * because form controls don't inherit font properties by default. */
 *,
 *::before,
@@ -1718,6 +1754,20 @@ main::-webkit-scrollbar-button {
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+/* Logos come in their own colors, so sit them on a plain white tile in both themes */
+.lead-avatar.has-logo {
+    background: #FFFFFF;
+    border: 1px solid var(--border);
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.lead-avatar img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
 }
 
 .lead-id {
