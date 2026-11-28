@@ -35,12 +35,13 @@ from io import BytesIO
 import json
 from sse_starlette.sse import EventSourceResponse
 import re
-from planner import parse_json
+from planner import parse_json, route_and_plan
 from pypdf import PdfReader
 from resume_profile import extract_resume_profile
 from memory import (
     update_memory, build_user_context, apply_exclusions,
     list_memory, edit_fact, delete_fact, clear_memory, add_fact, MemoryFull,
+    should_update_memory,
     FactKind, MAX_TEXT, MAX_FACTS,
 )
 
@@ -260,6 +261,23 @@ def normalize_result(result):
         return summary, result.get("leads") or []
     
     return result, []
+
+
+_DOMAIN_RE = re.compile(r"^(?=.{4,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}$")
+
+
+def _clean_domain(value) -> str | None:
+    """'https://www.NVIDIA.com/careers' -> 'nvidia.com'. Anything that isn't a plain domain -> None.
+
+    The browser puts this into a Google favicon URL, so only a strict domain may pass.
+    """
+    if not isinstance(value, str):
+        return None
+    d = value.strip().lower()
+    d = re.sub(r"^[a-z]+://", "", d).split("/")[0].split("?")[0].split(":")[0]
+    if d.startswith("www."):
+        d = d[4:]
+    return d if _DOMAIN_RE.match(d) else None
 
 
 @asynccontextmanager
@@ -620,6 +638,21 @@ async def _update_memory_safely(user_id: str, message: str, mode: str, recent: l
         print(f"WARNING: memory update failed: {type(e).__name__}")
 
 
+async def _classify_mode(message: str) -> str:
+    """Fallback classifier, used only when route_and_plan's reply can't be parsed."""
+    text = await claude_code_invoke(
+        system="You are a classifier. Respond with exactly one word.",
+        user=(
+            "Classify this query into exactly one category:\n"
+            "- PERSON: asking to find specific people, professionals, or employees\n"
+            "- COMPANY: asking to discover companies, startups or organizations\n"
+            "- GENERAL: anything else (factual question, greetings, etc)\n\n"
+            f"Respond with only one word: PERSON, COMPANY or GENERAL.\n\nquery: {message}"
+        ),
+    )
+    return parse_mode(text)
+
+
 @app.post("/processQuery")
 async def process_query(
     query: ChatRequest,
@@ -646,28 +679,24 @@ async def process_query(
         user_memory_collection, user_keys_collection, user_id, resume_profile, recent
     )
 
-    classify_prompt = f"""Classify this query into exactly one category:
-    - PERSON: asking to find specific people, professionals, or employees
-    - COMPANY: asking to discover companies, startups or organnizations
-    - GENERAL: anything else (factual question, greetings, etc)
-
-    Respond with only one word: PERSON, COMPANY or GENERAL.
-
-    query: {query.message}
-    """
-    classification_text = await claude_code_invoke(
-        system="You are a classifier. Respond with exactly one word.",
-        user=classify_prompt,
-    )
-    mode = parse_mode(classification_text)
+    # One LLM call both classifies the query and plans its searches.
+    try:
+        mode, plan = await route_and_plan(query.message, profile=resume_profile, memory=ctx.text)
+    except LLMUnavailableError:
+        raise
+    except Exception as e:
+        # Reply didn't match the schema: fall back to the old one-word classifier;
+        # find_leads / find_companies then plan on their own.
+        print(f"WARNING: route_and_plan failed ({type(e).__name__}); using classifier fallback")
+        mode, plan = await _classify_mode(query.message), None
 
     if mode == "PERSON":
         result = await pipeline.find_leads(
-            query.message, llm, resume_text, resume_profile=resume_profile, memory=ctx.text
+            query.message, llm, resume_text, resume_profile=resume_profile, memory=ctx.text, plan=plan
         )
     elif mode == "COMPANY":
         result = await pipeline.find_companies(
-            query.message, llm, resume_text, resume_profile=resume_profile, memory=ctx.text
+            query.message, llm, resume_text, resume_profile=resume_profile, memory=ctx.text, plan=plan
         )
     else:
         system = REACHER_SYSTEM_PROMPT
@@ -680,12 +709,21 @@ async def process_query(
         result = {"summary": direct_text, "leads": []}
 
     summary, leads = normalize_result(result)
+    for lead in leads:
+        if isinstance(lead, dict):
+            lead["domain"] = _clean_domain(lead.get("domain"))
     kept = apply_exclusions(leads, ctx.facts)
     if len(kept) != len(leads):
         print(f"INFO: exclusions removed {len(leads) - len(kept)} lead(s)")   # count only, no names
     leads = kept
 
-    if user_memory_collection is not None and user_keys_collection is not None:
+    # Most messages change nothing, so skip the LLM memory call unless the
+    # message has a cue (or is picked for the occasional pattern check).
+    if (
+        user_memory_collection is not None
+        and user_keys_collection is not None
+        and should_update_memory(query.message, random.random())
+    ):
         background_tasks.add_task(_update_memory_safely, user_id, query.message, mode, ctx.recent)
 
     assistant_msg = {

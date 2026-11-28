@@ -1,5 +1,5 @@
 import json
-from llm_provider import claude_code_invoke, PlanResponse, SynthesisResponse
+from llm_provider import claude_code_invoke, PlanResponse, RoutedPlan, SynthesisResponse
 from resume_profile import format_resume_profile
 
 PLANNER_PROMPT = """You are a research planner for FINDING PEOPLE for cold outreach.
@@ -63,6 +63,72 @@ async def generate_plan(query, prompt=None, profile=None, memory="No memory yet"
       schema=PlanResponse,
   )
   return [{"url": s.url, "goal": s.goal} for s in result.steps]
+
+
+ROUTE_AND_PLAN_PROMPT = """You are the router and research planner for Reacher, an app that finds PEOPLE and COMPANIES for job-search cold outreach.
+
+STEP 1. Classify the user query into exactly one mode:
+- PERSON: find specific people, professionals or employees
+- COMPANY: discover companies, startups or organizations
+- GENERAL: anything else (advice, factual question, greeting, cold-email help)
+
+STEP 2. If the mode is GENERAL, return "steps": []. Otherwise output 2-4 search URLs to scrape.
+
+RULES FOR ALL SEARCHES:
+- Use DuckDuckGo for search (NOT Google — it blocks bots)
+- Search format: https://duckduckgo.com/html/?q=YOUR+QUERY
+- Replace spaces with + in the query.
+- Do NOT include LinkedIn URLs (they block scraping)
+- The user query is the primary intent — never ignore it in favor of the profile
+- Follow USER MEMORY: never search for anything it excludes; use its preferences and goals to shape searches.
+  Items marked (guess) are hints only.
+- Use RECENT QUERIES only to understand follow-ups (e.g. "narrow it down to Seattle"); otherwise plan for the current query.
+
+PERSON mode:
+- Goal: find people with names, job titles and contact information.
+- Do NOT link to generic career/about pages - these don't have individual people
+- Combine query intent with profile skills, companies, schools, locations and target roles
+- Prefer warm-path angles when they fit (alumni + company, shared stack + team pages, industry speakers)
+- Good strategies: "site:nvidia.com ML engineer team", "nvidia machine learning engineer name email",
+  "nvidia ML engineer speaker conference", "nvidia machine learning blog author", "UMD alumni Stripe engineer"
+
+COMPANY mode:
+- Goal: find companies, startups or organizations matching the query.
+- Prefer lists and directories: "top cybersecurity startups DC", "site:builtin.com", "site:ycombinator.com/companies", "site:wellfound.com"
+- Bias toward companies that fit the user's skills, industries, locations and target roles while still answering the query
+
+Respond with ONLY valid JSON, no markdown:
+{{
+  "mode": "PERSON" | "COMPANY" | "GENERAL",
+  "steps": [
+    {{"url": "https://...", "goal": "what to extract from this page"}}
+  ]
+}}
+
+User query: {query}
+
+USER PROFILE (structured):
+{profile}
+
+{memory}"""
+
+
+async def route_and_plan(query, profile=None, memory="No memory yet") -> tuple[str, list[dict]]:
+  """One LLM call that classifies the query and, for PERSON/COMPANY, plans the searches.
+
+  Replaces the separate classifier call. Returns (mode, steps); steps is [] for GENERAL.
+  """
+  result = await claude_code_invoke(
+      system="You are a query router and research planner. Respond with only valid JSON.",
+      user=ROUTE_AND_PLAN_PROMPT.format(
+          query=query,
+          profile=format_resume_profile(profile),
+          memory=memory or "No memory yet",
+      ),
+      schema=RoutedPlan,
+  )
+  steps = [] if result.mode == "GENERAL" else [{"url": s.url, "goal": s.goal} for s in result.steps]
+  return result.mode, steps
 
 
 SYNTHESIZER_PROMPT = """
@@ -207,7 +273,8 @@ Respond with ONLY valid JSON, no markdown:
       "company": "Location or stage if known, otherwise empty string",
       "email": null,
       "source_url": "company website or where you found it",
-      "relevance": "Why this company fits the user's background and the query"
+      "relevance": "Why this company fits the user's background and the query",
+      "domain": "the company's own website domain, like nvidia.com, or null if unsure"
     }}
   ],
   "summary": "A brief summary of what was found"

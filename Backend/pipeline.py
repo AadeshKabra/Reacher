@@ -5,8 +5,10 @@ from browser_use.agent.service import Agent
 from browser_use.browser.browser import BrowserConfig
 
 
-async def find_leads(query, llm, resume_text="", resume_profile=None, memory=""):
-    plan = await generate_plan(query, profile=resume_profile, memory=memory)
+async def find_leads(query, llm, resume_text="", resume_profile=None, memory="", plan=None):
+    # plan: steps already made by planner.route_and_plan; if missing, plan here (eval does this).
+    if not plan:
+        plan = await generate_plan(query, profile=resume_profile, memory=memory)
     urls = [step["url"] for step in plan]
 
     # pages = await scrape_multiple(urls)
@@ -27,8 +29,9 @@ async def _render_js_pages(pages, llm, instruction):
         page.success = True
 
 
-async def find_companies(query, llm, resume_text="", resume_profile=None, memory=""):
-    plan = await generate_plan(query, COMPANY_PLANNER_PROMPT, profile=resume_profile, memory=memory)
+async def find_companies(query, llm, resume_text="", resume_profile=None, memory="", plan=None):
+    if not plan:
+        plan = await generate_plan(query, COMPANY_PLANNER_PROMPT, profile=resume_profile, memory=memory)
     urls = [step["url"] for step in plan]
 
     pages = await scrape_multiple(urls)

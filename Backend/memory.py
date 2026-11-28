@@ -2,6 +2,7 @@
 
 merge_facts() is pure code (no Mongo, no LLM), so it can be tested on its own.
 """
+import re
 import uuid
 from datetime import datetime, timezone
 from typing import Literal
@@ -210,6 +211,37 @@ def _as_utc(value):
         return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
     return datetime.now(timezone.utc)
 
+# ---------------------------------------------------------------------------
+# should_update_memory: cheap check before spending an LLM call (pure code)
+# ---------------------------------------------------------------------------
+
+# Words that suggest the message says something lasting about the user.
+_MEMORY_CUES = re.compile(
+    r"\b(?:i|i'm|im|i've|i'd|my|me|mine|myself|"
+    r"prefer\w*|exclude\w*|avoid\w*|skip|never|always|only|stop|"
+    r"don't|dont|do not|no more|not interested|interested in|"
+    r"remember|forget|from now on|going forward|"
+    r"graduat\w*|visa|sponsor\w*|relocat\w*|remote|hybrid|based in|"
+    r"new grad|intern\w*|career|goal|target\w*)\b",
+    re.IGNORECASE,
+)
+
+# Share of cue-free messages still sent to the LLM, so it can notice patterns
+# across recent queries (the "3+ similar queries" guesses).
+PATTERN_SAMPLE_RATE = 0.2
+
+
+def should_update_memory(message: str, rand: float) -> bool:
+    """True if this message is worth an LLM memory call.
+
+    rand is a number in [0, 1) passed in by the caller (random.random()),
+    so tests can control it.
+    """
+    if _MEMORY_CUES.search(message or ""):
+        return True
+    return rand < PATTERN_SAMPLE_RATE
+
+
 async def update_memory(memory_coll, user_keys, user_id, message, mode, recent, retries=2):
     doc, facts = await _load(memory_coll, user_keys, user_id)
     ops = await propose_memory_ops(message, mode, recent, facts)
@@ -249,8 +281,6 @@ async def update_memory(memory_coll, user_keys, user_id, message, mode, recent, 
 # ---------------------------------------------------------------------------
 # apply_exclusions: hard filter on leads (pure code, no LLM)
 # ---------------------------------------------------------------------------
-
-import re
 
 EXCLUDE_MIN = 0.8
 

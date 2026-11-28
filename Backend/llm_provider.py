@@ -6,7 +6,7 @@ import subprocess
 import tempfile
 import uuid
 from pathlib import Path
-from typing import Any, Optional, TypeVar
+from typing import Any, Literal, Optional, TypeVar
 
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import (
@@ -21,7 +21,7 @@ from pydantic import BaseModel
 
 T = TypeVar("T", bound=BaseModel)
 
-CLAUDE_CODE_MODEL = os.getenv("CLAUDE_CODE_MODEL", "claude-opus-4-6")
+CLAUDE_CODE_MODEL = os.getenv("CLAUDE_CODE_MODEL", "claude-sonnet-5-5")
 CLAUDE_CODE_EFFORT = os.getenv("CLAUDE_CODE_EFFORT", "medium")
 CLAUDE_CODE_TIMEOUT = float(os.getenv("CLAUDE_CODE_TIMEOUT", "180"))
 USE_CLI_FOR_AGENT = os.getenv("USE_CLI_FOR_AGENT", "true").lower() == "true"
@@ -55,6 +55,11 @@ class PlanStep(BaseModel):
 class PlanResponse(BaseModel):
     steps: list[PlanStep]
 
+class RoutedPlan(BaseModel):
+    """Classification and plan from one LLM call. steps is empty for GENERAL."""
+    mode: Literal["PERSON", "COMPANY", "GENERAL"]
+    steps: list[PlanStep] = []
+
 class Lead(BaseModel):
     name: str
     title: str
@@ -62,6 +67,7 @@ class Lead(BaseModel):
     email: Optional[str] = None
     source_url: str
     relevance: str
+    domain: Optional[str] = None   # company's own website domain, e.g. "nvidia.com"; used for its logo
 
 class SynthesisResponse(BaseModel):
     leads: list[Lead]

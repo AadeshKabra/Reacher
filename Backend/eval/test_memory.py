@@ -5,7 +5,22 @@ from datetime import datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from memory import GUESS, GUESS_MAX, MAX_FACTS, SAID, MemoryOp, merge_facts
+from memory import (
+    GUESS, GUESS_MAX, MAX_FACTS, SAID, MemoryOp, merge_facts, should_update_memory,
+)
+
+
+def test_memory_gate_cues_always_pass():
+    for msg in ["I prefer early-stage startups", "Exclude Meta from now on",
+                "don't show recruiters", "I'm on an F-1 visa, need sponsorship",
+                "my goal is new grad SWE roles"]:
+        assert should_update_memory(msg, rand=0.99), msg
+
+
+def test_memory_gate_plain_search_mostly_skipped():
+    msg = "Find ML engineers at Nvidia"
+    assert not should_update_memory(msg, rand=0.99)
+    assert should_update_memory(msg, rand=0.0)   # the occasional pattern check
 
 
 def fact(fid, said=False, conf=None, pinned=False, source="chat", age_days=0):
